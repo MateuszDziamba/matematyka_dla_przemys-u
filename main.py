@@ -57,26 +57,59 @@ while len(agents_positions) > 0:
     for index in agents_positions:
         row = index[0]
         column = index[1]
+        going_right = index[2]
         
-        num_of_agents_in_cell_going_right = int(net.matrix[row][column][0])
-        for _ in range(num_of_agents_in_cell_going_right):
-            new_row, new_col = functions.get_new_position(net,row,column,True,p0,p1,p2,p3,p4,p5)
-            net.add_agent(new_row,new_col,True)
-            net.matrix[row][column][0] -= 1
-            #brak obsługi kolizji
-            new_index = (new_row,new_col,True)
+        num_of_agents_in_cell = int(net.matrix[row][column][int(not going_right)])
+        for _ in range(num_of_agents_in_cell):
+            new_row, new_col = functions.get_new_position(net,row,column,going_right,p0,p1,p2,p3,p4,p5)
+            
+            #obsługa kolizji takich jak w artykule
+            if going_right:
+                #w prawo-góra
+                if new_row == row-1 and new_col == column+1: 
+                    if (row,column+1,new_row,column) in Possible_collision: #kolizja
+                        if random.random() < functions.p_avoi(p2,p4,row,column,going_right,net):
+                            new_row, new_col = functions.get_random_position(row,column,going_right,p0,p1,p2,p3,p4,p5) #unik
+                            if (new_row == row+1 and new_col == column+1) and ((row,column,new_row,new_col) not in Possible_collision): #unik w prawo-dół = potencjalna kolejna kolizja dla innych agentów
+                                Possible_collision.append((row,column,new_row,new_col))
+                    else: #brak kolizji, ale potencjalnie możliwa dla innego agenta
+                        Possible_collision.append((row,column,new_row,new_col))
+                #w prawo-dół
+                if new_row == row+1 and new_col == column+1:
+                    if (row,column+1,new_row,column) in Possible_collision: #kolizja
+                        if random.random() < functions.p_avoi(p2,p4,row,column,going_right,net):
+                            new_row, new_col = functions.get_random_position(row,column,going_right,p0,p1,p2,p3,p4,p5) #unik
+                            if (new_row == row-1 and new_col == column+1) and ((row,column,new_row,new_col) not in Possible_collision): #unik w prawo-góra = potencjalna kolejna kolizja dla innych agentów
+                                Possible_collision.append((row,column,new_row,new_col))
+                    else: #brak kolizji, ale potencjalnie możliwa dla innego agenta
+                        Possible_collision.append((row,column,new_row,new_col))
+                
+            if not going_right:
+                #w lewo-góra
+                if new_row == row-1 and new_col == column-1: 
+                    if (row,column-1,new_row,column) in Possible_collision: #kolizja
+                        if random.random() < functions.p_avoi(p2,p4,row,column,going_right,net):
+                            new_row, new_col = functions.get_random_position(row,column,going_right,p0,p1,p2,p3,p4,p5) #unik
+                            if (new_row == row+1 and new_col == column-1) and ((row,column,new_row,new_col) not in Possible_collision): #unik w lewo-dół = potencjalna kolejna kolizja dla innych agentów
+                                Possible_collision.append((row,column,new_row,new_col))
+                    else: #brak kolizji, ale potencjalnie możliwa dla innego agenta
+                        Possible_collision.append((row,column,new_row,new_col))
+                #w lewo-dół
+                if new_row == row+1 and new_col == column-1:
+                    if (row,column-1,new_row,column) in Possible_collision: #kolizja
+                        if random.random() < functions.p_avoi(p2,p4,row,column,going_right,net):
+                            new_row, new_col = functions.get_random_position(row,column,going_right,p0,p1,p2,p3,p4,p5) #unik
+                            if (new_row == row-1 and new_col == column-1) and ((row,column,new_row,new_col) not in Possible_collision): #unik w lewo-góra = potencjalna kolejna kolizja dla innych agentów
+                                Possible_collision.append((row,column,new_row,new_col))
+                    else: #brak kolizji, ale potencjalnie możliwa dla innego agenta
+                        Possible_collision.append((row,column,new_row,new_col))
+                
+            
+            net.add_agent(new_row,new_col,going_right)
+            net.matrix[row][column][int(not going_right)] -= 1
+            new_index = (new_row,new_col,going_right)
             if not new_index in new_agents_positions: 
-                new_agents_positions.append((new_row,new_col,True))   
-        
-        num_of_agents_in_cell_going_left = int(net.matrix[row][column][1])
-        for _ in range(int(net.matrix[row][column][1])):
-            new_row, new_col = functions.get_new_position(net,row,column,False,p0,p1,p2,p3,p4,p5)
-            net.add_agent(new_row,new_col,False)
-            net.matrix[row][column][1] -= 1
-            #brak obsługi kolizji
-            new_index = (new_row,new_col,False)
-            if not new_index in new_agents_positions: 
-                new_agents_positions.append((new_row,new_col,False))
+                new_agents_positions.append((new_row,new_col,going_right))   
             
     agents_positions = new_agents_positions
     

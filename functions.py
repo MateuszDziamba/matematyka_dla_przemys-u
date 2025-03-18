@@ -24,6 +24,68 @@ def cosine_between_vectors(v1, v2):
     
     return cosine
 
+def p_avoi(p2: float,p4: float,row: int,col: int,going_right: bool,net: network.network) -> float:
+    """Oblicza wartość p_avoi z artykułu
+
+    Args:
+        p2 (float): jak w artykule
+        p4 (float): jak w artykule
+        row (int): wiersz na którym znajduje się analizowany agent
+        col (int): kolumna na której znajduje się analizowany agent
+        going_right (bool): kierunek w którym porusza się agent
+
+    Returns:
+        float: wartość p_avoi
+    """
+    if going_right:
+        n = net.matrix[row][col+1][1]
+    else:
+        n = net.matrix[row][col-1][0]
+        
+    p = (p2+p4)/2 #przyjmuję, że p2=p4, bo tak jest w artykule. Jeśli ktoś to zmieni to funkcja będzie nadal działać, ale inaczej niż w artykule bo nie chce mi się robić tego na razie implementować
+    p_avoi = 1 - (1-p)**n
+    
+    return p_avoi
+
+def get_random_position(row: int, col: int, going_right: bool,
+                     p0: float, p1: float, p2: float, p3: float, p4: float, p5: float) -> tuple:
+    """
+    Losowe wybranie nowej pozycji agenta na planszy
+    """
+    P = [p0,p1,p2,p3,p4,p5]
+    random_number = random.random()
+    controll_number = 0
+    for i in range(6):
+        controll_number += P[i]
+        if random_number < controll_number:
+            break
+    if going_right:
+        if i == 0:
+            return int(row),int(col)
+        if i == 1:
+            return int(row-1), int(col)
+        if i == 2:
+            return int(row-1), int(col+1)
+        if i == 3:
+            return int(row), int(col+1)
+        if i == 4:
+            return int(row+1), int(col+1)
+        if i == 5:
+            return int(row+1), int(col)
+    if not going_right:
+        if i == 0:
+            return int(row),int(col)
+        if i == 1:
+            return int(row+1), int(col)
+        if i == 2:
+            return int(row+1), int(col-1)
+        if i == 3:
+            return int(row), int(col-1)
+        if i == 4:
+            return int(row-1), int(col-1)
+        if i == 5:
+            return int(row-1), int(col)
+        
 
 def calculate_g_values(net: network.network, row: int, col: int, index: int, going_right: bool) -> tuple:
     """Oblicza wartości g_i tak jak w artykule
