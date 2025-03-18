@@ -38,3 +38,4 @@ v2 = [0, 1]
 print(cosine_between_vectors(v1, v2))  # Wynik: 0.0 (czyli kąty proste)
 
 
+print(bool(0))

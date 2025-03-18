@@ -25,7 +25,7 @@ def cosine_between_vectors(v1, v2):
     return cosine
 
 
-def calculate_g_values(net: network.network, row: int, col: int, index: int) -> tuple:
+def calculate_g_values(net: network.network, row: int, col: int, index: int, going_right: bool) -> tuple:
     """Oblicza wartości g_i tak jak w artykule
 
     Args:
@@ -36,19 +36,32 @@ def calculate_g_values(net: network.network, row: int, col: int, index: int) -> 
     Returns:
         tuple: wartości g_i
     """
-    
-    if index == 0:
-        r,c = row, col
-    if index == 1:
-        r,c = row - 1, col
-    if index == 2:
-        r,c = row-1, col+1
-    if index == 3:
-        r,c = row, col + 1
-    if index == 4:
-        r,c = row + 1, col + 1
-    if index == 5:
-        r,c = row + 1, col
+    if going_right:
+        if index == 0:
+            r,c = row, col
+        if index == 1:
+            r,c = row - 1, col
+        if index == 2:
+            r,c = row-1, col+1
+        if index == 3:
+            r,c = row, col + 1
+        if index == 4:
+            r,c = row + 1, col + 1
+        if index == 5:
+            r,c = row + 1, col
+    if not going_right:
+        if index == 0:
+            r,c = row, col
+        if index == 1:
+            r,c = row + 1, col
+        if index == 2:
+            r,c = row+1, col-1
+        if index == 3:
+            r,c = row, col - 1
+        if index == 4:
+            r,c = row - 1, col - 1
+        if index == 5:
+            r,c = row - 1, col
     
     g0 = net.matrix[r][c][0] + net.matrix[r][c][1]
     g1,g2,g3,g4,g5 = 0,0,0,0,0
@@ -94,11 +107,11 @@ def calculate_g_values(net: network.network, row: int, col: int, index: int) -> 
     try:
         g5 += net.matrix[r-1][c][0]
     except:
-        g5 = 0
+        g5 += 0
     try:
         g5 += net.matrix[r+1][c][1]
     except:
-        g5
+        g5 += 0
     
     return g0, g1, g2, g3, g4, g5
 
@@ -172,11 +185,15 @@ def get_new_position(net: network.network, row: int, col: int, going_right: bool
     utilty_map = np.zeros(6) #numeracja taka sama jak dla prawdopodobieństw z artykułu
     
     if going_right:
+        exit_distance = np.sqrt(net.num_of_rows**2 + net.num_of_columns**2)
         for exit in net.exits:
                 if exit[2] == True:
-                    exit_row = exit[0]
-                    exit_col = exit[1]
-                    break #na razie wybieramy pierwsze dostępne wyjście, można dodać obsługe wielu wyjść np. najbliższego
+                    distance = np.sqrt((exit[0]-row)**2 + (exit[1]-col)**2)
+                    if distance <= exit_distance:
+                        exit_distance = distance
+                        exit_row = exit[0]
+                        exit_col = exit[1]
+                    
         exit_vect = [exit_row-row,exit_col-col]
         s = 1 #dystans wszędzie (czyli do ruchów po przekątnej również) przyjąłem 1, można zmienić i zobaczyć co się stanie
         
@@ -190,7 +207,7 @@ def get_new_position(net: network.network, row: int, col: int, going_right: bool
                 continue
             
             mi_move = 0
-            g0,g1,g2,g3,g4,g5 = calculate_g_values(net,row,col,i)
+            g0,g1,g2,g3,g4,g5 = calculate_g_values(net,row,col,i,going_right)
             
             if i == 1:
                 v = [-1,0]
@@ -226,11 +243,15 @@ def get_new_position(net: network.network, row: int, col: int, going_right: bool
             return int(row+1), int(col)
         
     if not going_right:
+        exit_distance = np.sqrt(net.num_of_rows**2 + net.num_of_columns**2)
         for exit in net.exits:
                 if exit[2] == False:
-                    exit_row = exit[0]
-                    exit_col = exit[1]
-                    break #na razie wybieramy pierwsze dostępne wyjście, można dodać obsługe wielu wyjść np. najbliższego
+                    distance = np.sqrt((exit[0]-row)**2 + (exit[1]-col)**2)
+                    if distance <= exit_distance:
+                        exit_distance = distance
+                        exit_row = exit[0]
+                        exit_col = exit[1]
+        
         exit_vect = [exit_row-row,exit_col-col]
         s = 1 #dystans wszędzie (czyli do ruchów po przekątnej również) przyjąłem 1, można zmienić i zobaczyć co się stanie
         
@@ -244,7 +265,7 @@ def get_new_position(net: network.network, row: int, col: int, going_right: bool
                 continue
             
             mi_move = 0
-            g0,g1,g2,g3,g4,g5 = calculate_g_values(net,row,col,i)
+            g0,g1,g2,g3,g4,g5 = calculate_g_values(net,row,col,i,going_right)
             
             if i == 1:
                 v = [1,0]
