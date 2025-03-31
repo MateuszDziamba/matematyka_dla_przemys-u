@@ -39,8 +39,8 @@ for i in range(num_of_agents):
 #symulacja ruchu agentów
 while len(agents_positions) > 0:
     print(net.matrix[::, ::, 0] + net.matrix[::, ::, 1])
-    #heatmap(net.matrix[::, ::, 0] + net.matrix[::, ::, 1], annot=True)
-    #plt.show()
+    heatmap(net.matrix[::, ::, 0] + net.matrix[::, ::, 1], annot=True)
+    plt.show()
     #print(agents_positions)
     
     new_agents_positions = []
