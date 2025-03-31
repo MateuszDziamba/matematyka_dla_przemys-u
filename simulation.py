@@ -2,6 +2,7 @@ import network
 import functions
 import random
 import numpy as np
+import network
 
 def do_simulation(net: network.network, num_of_agents: int, lam: float, p0: float, p1: float, p2: float, p3: float, p4: float, p5: float) -> tuple:
     '''
@@ -32,6 +33,7 @@ def do_simulation(net: network.network, num_of_agents: int, lam: float, p0: floa
     while agents_to_go > 0:
         
         num_of_steps += 1 #licznik klatek symulacji
+        exit_reached = 0 #zmienna pomocnicza do zliczania liczby agentów, którzy dotarli do wyjścia w danym kroku
         
         #dodanie nowych agentów do sieci jeżli dodanych dotychczas agentów jest mniej niż docelowa liczba num_of_agents
         if spawned_agents < num_of_agents: #jeżeli nie ma jeszcze wszystkich agentów w sieci
