@@ -1,13 +1,5 @@
 import network
 import simulation as sim
-import numpy as np
-from seaborn import heatmap
-import matplotlib.pyplot as plt
-from io import BytesIO
-from PIL import Image
-import os
-from datetime import datetime
-import imageio.v2 as imageio
 import animation_and_plots
 
 #sieć na której będzie się odbywała symulacja
