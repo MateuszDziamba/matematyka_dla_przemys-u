@@ -57,7 +57,7 @@ def do_staff(animation = True, avg_speed = True, num_of_exits = True, simulation
 
     if avg_speed:
         avg_speed=np.average(speed_vec) # średnia prędkość w całym ruchu, ruchów jest o 1 mniej niż kolumn 
-        steps=np.linspace(1,num_of_steps-1,num_of_steps-1)
+        steps=np.linspace(1,len(speed_vec),len(speed_vec))
         velocity_fig, ax = plt.subplots()
         ax.plot(steps, speed_vec, label='AVG speed') # usuwam ostatnią obserwację bo jest 0
         ax.plot(steps, [avg_speed]*len(steps), 'r--', label='VPF') #vpf = velocity of pedestarian flow

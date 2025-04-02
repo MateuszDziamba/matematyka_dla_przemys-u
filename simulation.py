@@ -160,5 +160,6 @@ def do_simulation(net: network.network, num_of_agents: int, lam: float, p0: floa
             speed_vec.append(speed_per_step/np.sum(net.matrix))  #śr predkość jednego człowieka per krok  
             
         agents_positions = new_agents_positions #aktualizacja pozycji agentów w sieci
+        random.shuffle(agents_positions) #wyeliminowanie arbitralnego pierwszeństwa agentów wcześniej dodanych do sieci
 
     return simulation, num_of_steps, agents_in_exit, speed_vec

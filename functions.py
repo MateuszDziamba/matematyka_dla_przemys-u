@@ -271,21 +271,27 @@ def get_new_position(net: network.network, row: int, col: int, going_right: bool
             mi_move = 0
             g0,g1,g2,g3,g4,g5 = calculate_g_values(net,row,col,i,going_right)
             
+            #zakometnowane podejście jest bardziej ogólne, ale ma błędy zaokrągleń
             if i == 1:
                 v = [-1,0]
-                mi_move += s * cosine_between_vectors(v,exit_vect)
+                #mi_move += s * cosine_between_vectors(v,exit_vect)
+                mi_move += 0
             if i == 2:
                 v = [-1,1]
-                mi_move += s * cosine_between_vectors(v,exit_vect)
+                #mi_move += s * cosine_between_vectors(v,exit_vect)
+                mi_move += 1
             if i == 3:
                 v = [0,1]
-                mi_move += s * cosine_between_vectors(v,exit_vect)
+                #mi_move += s * cosine_between_vectors(v,exit_vect)
+                mi_move += 1
             if i == 4:
                 v = [1,1]
-                mi_move += s * cosine_between_vectors(v,exit_vect)
+                #mi_move += s * cosine_between_vectors(v,exit_vect)
+                mi_move += 1
             if i == 5:
                 v = [1,0]
-                mi_move += s * cosine_between_vectors(v,exit_vect)
+                #mi_move += s * cosine_between_vectors(v,exit_vect)
+                mi_move += 0
             
             utilty_map[i] = mi_move + ksi_comf(p0,p1,p2,p3,p4,p5,g0,g1,g2,g3,g4,g5)
             
@@ -331,19 +337,24 @@ def get_new_position(net: network.network, row: int, col: int, going_right: bool
             
             if i == 1:
                 v = [1,0]
-                mi_move += s * cosine_between_vectors(v,exit_vect)
+                #mi_move += s * cosine_between_vectors(v,exit_vect)
+                mi_move += 0
             if i == 2:
                 v = [1,-1]
-                mi_move += s * cosine_between_vectors(v,exit_vect)
+                #mi_move += s * cosine_between_vectors(v,exit_vect)
+                mi_move += 1
             if i == 3:
                 v = [0,-1]
-                mi_move += s * cosine_between_vectors(v,exit_vect)
+                #mi_move += s * cosine_between_vectors(v,exit_vect)
+                mi_move += 1
             if i == 4:
                 v = [-1,-1]
-                mi_move += s * cosine_between_vectors(v,exit_vect)
+                #mi_move += s * cosine_between_vectors(v,exit_vect)
+                mi_move += 1
             if i == 5:
                 v = [-1,0]
-                mi_move += s * cosine_between_vectors(v,exit_vect)
+                #mi_move += s * cosine_between_vectors(v,exit_vect)
+                mi_move += 1
             
             utilty_map[i] = mi_move + ksi_comf(p0,p1,p2,p3,p4,p5,g0,g1,g2,g3,g4,g5)
             
