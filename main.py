@@ -113,6 +113,8 @@ while len(agents_positions) > 0:
             
     agents_positions = new_agents_positions
     
+    #APUD
+    
     
         
 
