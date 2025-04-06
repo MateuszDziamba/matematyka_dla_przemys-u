@@ -1,7 +1,6 @@
 import network
 import comparisons_functions
 
-
 num_of_rows = int(4) #3m to szerokość tunelu, 0.7m to szerokość jednej komórki
 num_of_columns = int(25)
 net = network.network(num_of_rows,num_of_columns) #stworzenie sieci
