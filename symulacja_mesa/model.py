@@ -33,6 +33,23 @@ class Evacuation(mesa.Model):
         #przestrzeń MultiGrid dopuszcza kilku agentów w jednym polu
         #argument False oznacza torus=False
         self.grid = mesa.space.MultiGrid(width, height, False)
+        self.moving_pattern = None
+        
+        #exits
+        self.door_width = 3
+        self.exit_width = None
+        self.exits = {''
+        #x  #ys - wysokosc drzwi - na razie ręcznie, można dodać suwak, przy parzystych wychodzi +1 szerokość (ze środkiem)
+        'left': [0, [self.grid.height//2 + i for i in range(-self.door_width//2, self.door_width//2)] ],
+        'right': [self.grid.width,  [self.grid.height//2 + i for i in range(-self.door_width//2, self.door_width//2)]]}
+
+        #poruszanie agentów
+        self.move_speed = None
+        self.step_length = None
+        self.probability_competing = None
+        self.percentage_of_BNE = None
+
+
 
         #tworzenie agentów
         agents = Pedestrian.create_agents(model=self, n=n)
@@ -47,4 +64,4 @@ class Evacuation(mesa.Model):
 
     def step(self):
         #funkcja shuffle_do miesza listę agentów i wykonuje podaną funkcję
-        self.agents.shuffle_do("move")
+        self.agents.shuffle_do("move_test")
