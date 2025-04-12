@@ -1,11 +1,19 @@
+'''
+SYMULACJĘ URUCHAMIAMY Z TERMINALA
+(w VS na dole lub po prostu w folderze używając Otwórz w Terminalu)
+będąc w tym folderze wpisujemy:
+solara run app.py
+po prostu odpalenie plików nic nie da
+'''
+
 from model import Evacuation
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import imageio
 import os
-
-model = Evacuation(80, 30, 10)
+import solara
+from mesa.visualization import SolaraViz, make_plot_component, make_space_component
 
 def heatmap():
     os.makedirs("plots", exist_ok=True)
@@ -51,5 +59,53 @@ def heatmap():
     for path in frame_paths:
         os.remove(path)
 
+def scatter_plot():
+    #wersja testowa
+    while len(model.agents.get("exited"))>0:
+        model.step()
+    agents_data = model.datacollector.get_agent_vars_dataframe()
+    for step in (np.unique(agents_data.index.get_level_values("Step"))):
+        sns.scatterplot(data=agents_data.xs(step, level = "Step"), x= "x", y= "y")
+        plt.show()
+    
 
-heatmap()
+def agent_portrayal(agent):
+    return {
+        "x": agent.pos[0],
+        "y": agent.pos[1]
+    }
+
+
+model = Evacuation(80,20,10)
+
+def space_component(model):
+    if not model.agents:
+        return solara.Markdown("## Ewakuacja zakończona")
+    model.step_callback = True
+    return make_space_component(agent_portrayal)(model)
+
+
+EvPlot = make_plot_component("evacuating")
+
+page = SolaraViz(
+    model,
+    model_params={
+        "n": {
+        "type": "SliderInt",
+        "value": 10,
+        "label": "Number of agents:",
+        "min": 10,
+        "max": 100,
+        "step": 1,
+
+        },
+        "width": 10,
+        "height": 10
+    },
+    components=[
+    space_component, 
+    EvPlot
+    ],
+    name = "Model Ewakuacji"
+)
+page

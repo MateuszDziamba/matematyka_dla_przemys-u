@@ -16,19 +16,13 @@ przebieg symulacji oraz zbieranie danych z jej przebiegu
 - agents.py definiujemy agentów i różne schematy poruszania
 - app.py ustawiamy parametry modelu, inicjalizujemy model i przeprowadzamy symulację
 z wizualizacją, dodajemy wykresy na żywo, suwaki itp.
-
-SYMULACJĘ URUCHAMIAMY Z TERMINALA
-(w VS na dole lub po prostu w folderze używając Otwórz w Terminalu)
-będąc w tym folderze wpisujemy:
-solara run app.py
-po prostu odpalenie plików nic nie da
 """
 import mesa
 from agents import Pedestrian
 import random
 
 class Evacuation(mesa.Model):
-    def __init__(self, n, width, height, seed=None):
+    def __init__(self, n=10, width=20, height=10, seed=10):
         super().__init__(seed=seed)
         self.number_persons = n
         #przestrzeń MultiGrid dopuszcza kilku agentów w jednym polu
@@ -51,6 +45,10 @@ class Evacuation(mesa.Model):
         self.probability_competing = None
         self.percentage_of_BNE = None
 
+        self.datacollector = mesa.DataCollector(
+            model_reporters={"evacuating": self.compute_agents},
+            agent_reporters={"x": "pos_x", "y": "pos_y", "speed": "speed"}
+        )
 
 
         #tworzenie agentów
@@ -60,12 +58,17 @@ class Evacuation(mesa.Model):
         Ys = self.rng.integers(0, self.grid.height, size = (n,))
         for a, i, j in zip(agents, Xs, Ys):
             self.grid.place_agent(a, (i,j))
+            a.prepare_agent()
             
-        #otoczenie komórek - wybieramy Moore neighborhood ze środkiem (9 komórek)
+        self.running = True
+        self.datacollector.collect(self)
 
+    def compute_agents(self):
+        return len(self.agents.get("exited"))
 
     def step(self):
         #funkcja shuffle_do miesza listę agentów i wykonuje podaną funkcję
+        self.datacollector.collect(self)
         self.agents.shuffle_do("decide")
 
     # def clean(self):

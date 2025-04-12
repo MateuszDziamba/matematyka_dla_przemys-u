@@ -14,10 +14,12 @@ class Pedestrian(mesa.Agent):
         self.leader = False
         self.door = self.get_door()
         self.exited = False
+        self.pos_x = None
+        self.pos_y = None
+        self.color = "blue"
+
 
     def get_door(self):
-        print("Hi i'm agent", self.unique_id, "going left:", self.left)
-        print("my door is:",self.model.exits['left' if self.left else 'right'] )
         return self.model.exits['left' if self.left else 'right']
        
     def test(self):
@@ -41,7 +43,7 @@ class Pedestrian(mesa.Agent):
     def set_speed(self):
         density = (len(self.get_neighborhood())-1)/(0.7*3*0.7*3) # ped/m^2 - wszsyscy w otoczeniu poza nami podzielone przez długośc i szerokość 3x3 komórki po 0.7 m
         self.speed = 1
-        #DO DOKOŃCZENIA - różna prędkość w zależności od density - na heatmapie bez problemy z "wirtualną pozycją float", ale dla ludzików nie wiem chyba trzeba by zrobić sztucznie gęstszą siatkę, żeby dało sie tak ruszać, ale wtedy trudniej wybieranie komórek
+        #DO DOKOŃCZENIA - różna prędkość w zależności od density - na heatmapie bez problemy z "wirtualną pozycją float"
         # if density<=4:
         #     print("density<-4")
         #     self.speed = self.model.move_speed
@@ -68,6 +70,11 @@ class Pedestrian(mesa.Agent):
         dy = np.sign(y_target-y)
 
         self.model.grid.move_agent(self, (x+dx, y+dy))
+
+    def prepare_agent(self):
+        x, y = self.pos
+        self.pos_x = x
+        self.pos_y = y
 
     def decide(self):
         x, y = self.pos
