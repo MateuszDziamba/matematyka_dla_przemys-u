@@ -91,17 +91,41 @@ def agent_portrayal(agent):
         "y": agent.pos[1]
     }
 
+def propertylayer_portrayal(model):
+    exits = model.exits
+    exit_tiles = []
+
+    for direction, (x, y_list) in exits.items():
+        for y in y_list:
+            exit_tiles.append({
+                "x": x,
+                "y": y,
+                "color": "green",
+                "size": 2.0,
+                "layer": 0,
+                "shape": "rect"
+            })
+    print("EXITS", model.exits)
+    return exit_tiles
 
 def ScatterPlot(model):
     if not model.agents:
         return solara.Markdown("## Ewakuacja zakończona")
     model.step_callback = True
-    return make_space_component(agent_portrayal)(model)
+    property_layers = {
+    "exits": propertylayer_portrayal
+    }
+    return make_space_component(agent_portrayal, property_layers)(model)
+
+def make_post_process(n):
+    def post_process(fig, ax, data):
+        ax.set_ylim(0, n)
+        return fig, ax
+    return post_process
 
 #liczba osób pozostałych na planszy, wykres liniowy
 EvPlot = make_plot_component("evacuating")
-
-model = Evacuation(80,20,10)
+model = Evacuation(80, 20, 10)
 
 #w dokumentacji Custom Components
 #https://mesa.readthedocs.io/stable/tutorials/visualization_tutorial.html
@@ -141,9 +165,23 @@ page = SolaraViz(
         "min": 10,
         "max": 100,
         "step": 10,
-
         },
-        "height": 10
+        "height": 10,
+        "p_BNE":{
+        "type": "SliderInt",
+        "value": 50,
+        "label": "Percent of agents BNE:",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        
+        },
+        "model_type":{
+            "type": "Checkbox",
+            "value": True,
+            "label": "BNE mixed with SR (T), with RF(F)",
+
+        }
     },
     components=[
         ScatterPlot,
