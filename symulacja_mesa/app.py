@@ -5,6 +5,17 @@ będąc w tym folderze wpisujemy:
 solara run app.py
 po prostu odpalenie plików nic nie da
 '''
+'''
+===== DO ZROBIENIA =========
+- schematy poruszanie BNE i RF
+- zmiana prędkości w zależności od density (to zrobi pewnie większą różnicę w porównaniu innych z BNE) - jak a artykule i jest zaczęte w agents.py
+- dodatkowe wykresy i ustawienie elementów na stronie
+- widoczność drzwi i ich szerokości na wykresach
+- dodatkowe suwaki np. szerokość drzwi
+- pewnie coś jeszcze...
+============================
+'''
+
 
 from model import Evacuation
 import numpy as np
@@ -14,7 +25,10 @@ import imageio
 import os
 import solara
 from mesa.visualization import SolaraViz, make_plot_component, make_space_component
+from mesa.visualization.utils import update_counter
+from matplotlib.figure import Figure
 
+#heatmapa zapisywana do pliku jak wcześniej
 def heatmap():
     os.makedirs("plots", exist_ok=True)
     frame_paths = []
@@ -59,6 +73,7 @@ def heatmap():
     for path in frame_paths:
         os.remove(path)
 
+#testowo, solara domyślnie robi taki plot - patrz niżej ScatterPlot
 def scatter_plot():
     #wersja testowa
     while len(model.agents.get("exited"))>0:
@@ -69,6 +84,7 @@ def scatter_plot():
         plt.show()
     
 
+#możemy wykorzystywać informacje o agencie oraz te zebrane przez data.collector (patrz model.py)
 def agent_portrayal(agent):
     return {
         "x": agent.pos[0],
@@ -76,17 +92,36 @@ def agent_portrayal(agent):
     }
 
 
-model = Evacuation(80,20,10)
-
-def space_component(model):
+def ScatterPlot(model):
     if not model.agents:
         return solara.Markdown("## Ewakuacja zakończona")
     model.step_callback = True
     return make_space_component(agent_portrayal)(model)
 
-
+#liczba osób pozostałych na planszy, wykres liniowy
 EvPlot = make_plot_component("evacuating")
 
+model = Evacuation(80,20,10)
+
+#w dokumentacji Custom Components
+#https://mesa.readthedocs.io/stable/tutorials/visualization_tutorial.html
+#heatmapa jak wcześniej w aplikacji automatycznie się aktualizuje
+@solara.component
+def Heatmap(model):
+    update_counter.get()
+    agent_counts = np.zeros((model.grid.width, model.grid.height))
+    for cell_content, (x, y) in model.grid.coord_iter():
+        agent_count = len(cell_content)
+        agent_counts[x][y] = agent_count
+    fig = Figure(figsize=(model.grid.width, model.grid.height))
+    ax = fig.subplots()
+    sns.heatmap(agent_counts.T, cmap="viridis", annot=True, cbar=True, vmin = 0, vmax = model.number_persons//10, ax=ax)
+    ax.invert_yaxis()
+    solara.FigureMatplotlib(fig)
+
+
+#definiujemy stronę, wszystkie wykresy które chcemy zdefiniowane
+#wyżej wpisujemy w components (nie muszą być wszystkie na raz)
 page = SolaraViz(
     model,
     model_params={
@@ -99,11 +134,20 @@ page = SolaraViz(
         "step": 1,
 
         },
-        "width": 10,
+        "width": {
+        "type": "SliderInt",
+        "value": 20,
+        "label": "Width:",
+        "min": 10,
+        "max": 100,
+        "step": 10,
+
+        },
         "height": 10
     },
     components=[
-    space_component, 
+        ScatterPlot,
+     Heatmap,
     EvPlot
     ],
     name = "Model Ewakuacji"
