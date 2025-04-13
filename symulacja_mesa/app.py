@@ -12,6 +12,7 @@ po prostu odpalenie plików nic nie da
 - dodatkowe wykresy i ustawienie elementów na stronie
 - widoczność drzwi i ich szerokości na wykresach
 - dodatkowe suwaki np. szerokość drzwi
+- dobrze by było ustabilizować zakres 0y na wykresach 
 - pewnie coś jeszcze...
 ============================
 '''
@@ -91,7 +92,7 @@ def agent_portrayal(agent):
         "y": agent.pos[1]
     }
 
-def propertylayer_portrayal(model):
+def exits_portrayal(model):
     exits = model.exits
     exit_tiles = []
 
@@ -112,10 +113,8 @@ def ScatterPlot(model):
     if not model.agents:
         return solara.Markdown("## Ewakuacja zakończona")
     model.step_callback = True
-    property_layers = {
-    "exits": propertylayer_portrayal
-    }
-    return make_space_component(agent_portrayal, property_layers)(model)
+    #property_layers = exits_portrayal(model)
+    return make_space_component(agent_portrayal)(model)
 
 def make_post_process(n):
     def post_process(fig, ax, data):
@@ -167,6 +166,14 @@ page = SolaraViz(
         "step": 10,
         },
         "height": 10,
+        "door_width":{
+        "type": "SliderInt",
+        "value": 4,
+        "label": "Door width:",
+        "min": 2,
+        "max": 10,
+        "step": 2,
+        },
         "p_BNE":{
         "type": "SliderInt",
         "value": 50,

@@ -23,7 +23,7 @@ import random
 import math
 
 class Evacuation(mesa.Model):
-    def __init__(self, n=10, width=20, height=10, seed=10, model_type = True, p_BNE = 100):
+    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=10, model_type = True, p_BNE = 100):
         super().__init__(seed=seed)
         self.patch_data = {}
         self.number_persons = n
@@ -36,7 +36,7 @@ class Evacuation(mesa.Model):
             self.moving_pattern = "BNE_mixed_RF"
     
         #exits
-        self.door_width = 3
+        self.door_width = door_width
         self.exit_width = None
         self.exits = {''
         #x  #ys - wysokosc drzwi - na razie ręcznie, można dodać suwak, przy parzystych wychodzi +1 szerokość (ze środkiem)
