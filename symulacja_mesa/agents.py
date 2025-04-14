@@ -60,7 +60,7 @@ class Pedestrian(mesa.Agent):
     def distance_to(self, target):
         x, y = self.pos
         Tx, Ty = target.pos
-        print(np.sqrt((x - Tx)**2 + (y - Ty)**2))
+        #print(np.sqrt((x - Tx)**2 + (y - Ty)**2))
         return np.sqrt((x - Tx)**2 + (y - Ty)**2)
     
     def find_closest_door_cell(self):
@@ -115,7 +115,7 @@ class Pedestrian(mesa.Agent):
         Tx = self.pos_x
         if self.left:
             self.nearby_leaders = [agent for agent in self.model.agents if (agent.pos_x < Tx 
-                                   and self.distance_to(agent) > 0 and self.distance_to(agent)< 5)]
+                                   and self.distance_to(agent) > 0 and self.distance_to(agent)< 5)] #ustawiony dystans na 5, ale można zmienić
         else:
             self.nearby_leaders = [agent for agent in self.model.agents if (agent.pos_x > Tx 
                                    and self.distance_to(agent) > 0 and self.distance_to(agent)< 5)]
@@ -170,9 +170,9 @@ class Pedestrian(mesa.Agent):
         neighbor_coords = []
 
         if self.left:
-            possible_coords = [(x-1, y), (x-1, y+1), (x-1, y-1)]
+            possible_coords = [(x-1, y), (x-1, y+1), (x-1, y-1), (x, y-1), (x, y+1)]
         else:
-            possible_coords = [(x+1, y), (x+1, y+1), (x+1, y-1)]
+            possible_coords = [(x+1, y), (x+1, y+1), (x+1, y-1), (x, y-1), (x, y+1)]
 
         # Filtrowanie tylko tych, które mieszczą się w siatce
         for coord in possible_coords:

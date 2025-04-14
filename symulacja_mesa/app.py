@@ -87,9 +87,15 @@ def scatter_plot():
 
 #możemy wykorzystywać informacje o agencie oraz te zebrane przez data.collector (patrz model.py)
 def agent_portrayal(agent):
+    if agent.BNE_type:
+        color = "#7b1fa2"
+    else:
+        color = "#1565c0"
+    
     return {
         "x": agent.pos[0],
-        "y": agent.pos[1]
+        "y": agent.pos[1],
+        "color": color
     }
 
 def exits_portrayal(model):
@@ -184,9 +190,10 @@ page = SolaraViz(
         
         },
         "model_type":{
-            "type": "Checkbox",
-            "value": True,
-            "label": "BNE mixed with SR (T), with RF(F)",
+            "type": "Select",
+            "value": "BNE_mixed_SR",
+            "label": "Model type",
+            "values": ["BNE_mixed_SR", "BNE_mixed_RF", "SR", "RF"],
 
         }
     },

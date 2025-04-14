@@ -23,17 +23,17 @@ import random
 import math
 
 class Evacuation(mesa.Model):
-    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=10, model_type = True, p_BNE = 100):
+    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=10, model_type = "BNE_mixed_SR", p_BNE = 100):
         super().__init__(seed=seed)
         self.patch_data = {}
         self.number_persons = n
         #przestrzeń MultiGrid dopuszcza kilku agentów w jednym polu
         #argument False oznacza torus=False
         self.grid = mesa.space.MultiGrid(width, height, False)
-        if model_type:
-            self.moving_pattern = "BNE_mixed_SR"
-        else:
-            self.moving_pattern = "BNE_mixed_RF"
+        
+        self.moving_pattern = model_type
+        
+        
     
         #exits
         self.door_width = door_width
@@ -62,12 +62,17 @@ class Evacuation(mesa.Model):
         #ustawienie agentów - losujemy współrzędne dla każdego
         Xs = self.rng.integers(0, self.grid.width, size = (n,))
         Ys = self.rng.integers(0, self.grid.height, size = (n,))
-        BNE_agents = self.random.sample(list(self.agents), int(self.percentage_of_BNE*n))
+        
         for a, i, j in zip(agents, Xs, Ys):
             self.grid.place_agent(a, (i,j))
             a.prepare_agent()
-        for agent in BNE_agents:
-            agent.BNE_type = True
+
+        #ustawienie typu agenta jeśli jest model mieszany
+        if self.moving_pattern == "BNE_mixed_SR" or self.moving_pattern == "BNE_mixed_RF":
+            BNE_agents = self.random.sample(list(self.agents), int(self.percentage_of_BNE*n))
+            for agent in BNE_agents:
+                agent.BNE_type = True
+
         self.running = True
         self.datacollector.collect(self)
         self.calculate_distance_utility()
