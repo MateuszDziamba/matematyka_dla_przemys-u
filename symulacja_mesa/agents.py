@@ -6,7 +6,7 @@ import random
 class Pedestrian(mesa.Agent):
     def __init__(self, model):
         super().__init__(model)
-        self.speed = None
+        self.speed = model.move_speed
         self.left = random.choice([True, False])
         self.follow = True
         self.BNE_type = None
@@ -17,6 +17,7 @@ class Pedestrian(mesa.Agent):
         self.pos_x = None
         self.pos_y = None
         self.color = "blue"
+        self.float_position = None
 
 
     def get_door(self):
@@ -40,22 +41,44 @@ class Pedestrian(mesa.Agent):
         new_position = self.random.choice(possible_steps)
         self.model.grid.move_agent(self, new_position)
 
-    # def set_speed(self):
-    #     density = (len(self.get_neighborhood())-1)/(0.7*3*0.7*3) # ped/m^2 - wszsyscy w otoczeniu poza nami podzielone przez długośc i szerokość 3x3 komórki po 0.7 m
-    #     self.speed = 1
     def set_speed(self):
         neighborhood = self.model.grid.get_neighbors(tuple(self.pos), moore=True, include_center=True)
         density = len(neighborhood) / (0.7 * 0.7 * 9)
-
+        print("============ Agent", self.unique_id)
+        print("density", density)
         if density <= 4:
             self.speed = self.model.move_speed
         elif density >= 8:
-            self.speed = self.model.move_speed / 14
+            self.speed = self.model.move_speed / 10
         else:
-            self.speed = self.model.move_speed * (0.03 * density ** 2 - 0.64 * density + 3.36) / 1.4
-        
+            self.speed =  ((8.12-density)/4.12)*self.model.move_speed
+
+
     def move_to_cell(self, cell):
-        self.model.grid.move_agent(self, cell)
+        cell = np.array(cell)
+        dx = np.sign(cell[0]-self.pos_x)
+        dy = np.sign(cell[1]-self.pos_y)
+        print("Prędkość", self.speed)
+        print("Pozycja:", self.pos)
+        print("pos_x, pos_y", self.pos_x, self.pos_y)
+        print("Float_pos:", self.float_position)
+        print("Cel: ", cell)
+        print("dx, dy", dx, dy)
+
+        #if np.sum(np.sign(self.float_position)*np.floor(np.abs(self.float_position)) == cell)==2: #nowe współrzędne
+        print("warunek")
+        print("abs", abs(self.float_position - cell), ">", self.speed)
+        print(abs(self.float_position - cell) > self.speed)
+        if sum(abs(self.float_position - cell) > self.speed) == 0 :
+            self.model.grid.move_agent(self, cell)
+            self.prepare_agent()
+            print("RUCH i nowa pozycja ", self.pos, self.float_position)
+        else:
+            print("BEZ RUCHU")
+            self.float_position += np.array([dx*self.speed, dy*self.speed], dtype=float)
+            print("float_pos", self.pos, self.float_position)
+
+
 
     def distance_to(self, target):
         x, y = self.pos
@@ -75,13 +98,14 @@ class Pedestrian(mesa.Agent):
         x_target, y_target = target
         dx = np.sign(x_target-x)
         dy = np.sign(y_target-y)
-
-        self.model.grid.move_agent(self, (x+dx, y+dy))
+        target = (x+dx, y+dy)
+        self.move_to_cell(target)
 
     def prepare_agent(self):
         x, y = self.pos
         self.pos_x = x
         self.pos_y = y
+        self.float_position = np.array(self.pos, dtype=float)
 
     def decide(self):
         x, y = self.pos

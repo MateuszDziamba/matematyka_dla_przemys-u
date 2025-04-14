@@ -43,10 +43,9 @@ class Evacuation(mesa.Model):
         # Zmieniłam bez +1, bo przy parzystej wysokości wyjściowej nie wychodziło równo
         'left': [0, [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2) )] ],
         'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2))]]}
-        print("width", self.door_width, "exits", self.exits)
 
         #poruszanie agentów
-        self.move_speed = 1.4
+        self.move_speed = 1
         self.step_length = None
         self.probability_competing = 10
         self.percentage_of_BNE = p_BNE/100
