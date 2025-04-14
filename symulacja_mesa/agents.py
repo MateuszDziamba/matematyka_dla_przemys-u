@@ -113,6 +113,9 @@ class Pedestrian(mesa.Agent):
 
     def random_follow(self):
         Tx = self.pos_x
+        self.nearby_leaders = None
+        self.leader = None
+        self.follow = False
         if self.left:
             self.nearby_leaders = [agent for agent in self.model.agents if (agent.pos_x < Tx 
                                    and self.distance_to(agent) > 0 and self.distance_to(agent)< 5)] #ustawiony dystans na 5, ale można zmienić
@@ -123,6 +126,7 @@ class Pedestrian(mesa.Agent):
 
         if self.nearby_leaders:
             self.leader = min(self.nearby_leaders, key=lambda target: self.distance_to(target))
+            print(self.distance_to(self.leader))
             self.follow = True
         else:
             self.leader = None
@@ -130,15 +134,16 @@ class Pedestrian(mesa.Agent):
 
         if self.follow:    
             if self.left:
-                if self.leader.pos_x >= Tx: 
+                if self.leader.pos_x < Tx :
+                    self.face_leader()               
+                else:
                     self.stop_following()
-                else:
-                    self.face_leader()
             else:
-                if self.leader.pos_x <= Tx:
-                    self.stop_following()                    
+                if self.leader.pos_x > Tx:
+                    
+                    self.face_leader()                    
                 else:
-                    self.face_leader()
+                    self.stop_following()
         else:
             self.shortest_route()
 
@@ -146,7 +151,9 @@ class Pedestrian(mesa.Agent):
     def face_leader(self):
         x, y = self.pos
         leader_x, leader_y = self.leader.pos
-        if leader_x == x: # teoretycznie powinno działać bez tego if, ale coś się wcześniej psuje i nie wiem co
+        if leader_x >= x and self.left: # teoretycznie powinno działać bez tego if, ale coś się wcześniej psuje i nie wiem co
+            self.stop_following()
+        elif leader_x <= x and not self.left:
             self.stop_following()
         else:
             dx = np.sign(leader_x - x)
