@@ -98,48 +98,37 @@ def agent_portrayal(agent):
         "color": color
     }
 
-def post_process(ax):
-    ax.set_aspect("equal")
-    ax.get_figure().set_size_inches(10, 10)
+def post_process(model):
+    def inner(ax):
+        ax.set_aspect("equal")
+        ax.get_figure().set_size_inches(10, 10)
 
-    width = model.grid.width
-    height = model.grid.height
+        width = model.grid.width
+        height = model.grid.height
 
-    # Górna i dolna ściana (ciągłe linie)
-    ax.plot([-0.5, width - 0.5], [-0.5, -0.5], color='black', linewidth=6)          
-    ax.plot([-0.5, width - 0.5], [height - 0.5, height - 0.5], color='black', linewidth=6)
+        # Górna i dolna ściana (ciągłe linie)
+        ax.plot([-0.5, width - 0.5], [-0.5, -0.5], color='black', linewidth=6)          
+        ax.plot([-0.5, width - 0.5], [height - 0.5, height - 0.5], color='black', linewidth=6)
 
-    # Lewa i prawa ściana z przerwami na drzwi
-    for side, (x, y_list) in model.exits.items():
-        door_ys = set(y_list)
-        wall_x = -0.5 if side == 'left' else width - 0.5
-        for y in range(height):
-            if y not in door_ys:
-                ax.plot([wall_x, wall_x], [y - 0.5, y + 0.5], color='black', linewidth=6)
-
-def exits_portrayal(model):
-    exits = model.exits
-    exit_tiles = []
-
-    for direction, (x, y_list) in exits.items():
-        for y in y_list:
-            exit_tiles.append({
-                "x": x,
-                "y": y,
-                "color": "green",
-                "size": 2.0,
-                "layer": 0,
-                "shape": "rect"
-            })
-    print("EXITS", model.exits)
-    return exit_tiles
+        # Lewa i prawa ściana z przerwami na drzwi
+        for door in model.exits:
+            x, y_list = model.exits[door]
+            y_set = set(y_list)
+            if door == "left":
+                wall_x = x - 0.5
+            else:
+                wall_x = x + 0.5
+            for y in range(height):
+                if y not in y_set:
+                    ax.plot([wall_x, wall_x], [y - 0.5, y + 0.5], color='black', linewidth=6)
+    return inner
 
 def ScatterPlot(model):
     if not model.agents:
         return solara.Markdown("## Ewakuacja zakończona")
     model.step_callback = True
     #property_layers = exits_portrayal(model)
-    return make_space_component(agent_portrayal, post_process=post_process)(model)
+    return make_space_component(agent_portrayal, post_process=post_process(model))(model)
 
 def make_post_process(n):
     def post_process(fig, ax, data):

@@ -40,8 +40,9 @@ class Evacuation(mesa.Model):
         self.exit_width = None
         self.exits = {''
         #x  #ys - wysokosc drzwi - na razie ręcznie, można dodać suwak, przy parzystych wychodzi +1 szerokość (ze środkiem)
-        'left': [0, [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2) +1)] ],
-        'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2)+1)]]}
+        # Zmieniłam bez +1, bo przy parzystej wysokości wyjściowej nie wychodziło równo
+        'left': [0, [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2) )] ],
+        'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2))]]}
         print("width", self.door_width, "exits", self.exits)
 
         #poruszanie agentów
