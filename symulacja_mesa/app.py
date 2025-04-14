@@ -123,22 +123,52 @@ def post_process(model):
                     ax.plot([wall_x, wall_x], [y - 0.5, y + 0.5], color='black', linewidth=6)
     return inner
 
+
+@solara.component
+def SpeedPlot(model):
+    update_counter.get()
+
+    fig = Figure(figsize=(6, 4))
+    ax = fig.subplots()
+
+    df = model.datacollector.get_agent_vars_dataframe()
+
+    if not df.empty and "speed" in df.columns:
+        grouped = df.groupby("Step")["speed"].mean()
+        ax.plot(grouped.index, grouped.values, color="blue")
+        ax.set_ylim((0, 2))
+        ax.set_title("Avg speed of agents per step")
+        ax.set_xlabel("Step")
+        ax.set_ylabel("Speed")
+        ax.grid(True)
+        ax.legend()
+    else:
+        ax.set_title("No data")
+
+    solara.FigureMatplotlib(fig)
+
 def ScatterPlot(model):
     if not model.agents:
         return solara.Markdown("## Ewakuacja zakończona")
     model.step_callback = True
     #property_layers = exits_portrayal(model)
     return make_space_component(agent_portrayal, post_process=post_process(model))(model)
+ 
+def post_process_evplot(model):
+    def inner(ax):
+        ax.set_ylim(-2, model.number_persons + 2)
+        ax.set_xlabel("Step")
+        ax.set_ylabel("exited")
+        ax.set_title("Number of agents in the room")
+        ax.get_figure().set_size_inches(6, 4)
+        ax.grid(True)
 
-def make_post_process(n):
-    def post_process(fig, ax, data):
-        ax.set_ylim(0, n)
-        return fig, ax
-    return post_process
+    return inner
 
 #liczba osób pozostałych na planszy, wykres liniowy
-EvPlot = make_plot_component("evacuating")
 model = Evacuation(80, 20, 10)
+EvPlot = make_plot_component("evacuating", post_process=post_process_evplot(model))
+
 
 #w dokumentacji Custom Components
 #https://mesa.readthedocs.io/stable/tutorials/visualization_tutorial.html
@@ -208,7 +238,8 @@ page = SolaraViz(
     components=[
         ScatterPlot,
      Heatmap,
-    EvPlot
+    EvPlot,
+    SpeedPlot
     ],
     name = "Model Ewakuacji"
 )

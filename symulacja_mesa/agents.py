@@ -6,7 +6,7 @@ import random
 class Pedestrian(mesa.Agent):
     def __init__(self, model):
         super().__init__(model)
-        self.speed = None
+        self.speed = 0
         self.left = random.choice([True, False])
         self.follow = True
         self.BNE_type = None
@@ -46,7 +46,7 @@ class Pedestrian(mesa.Agent):
     def set_speed(self):
         neighborhood = self.model.grid.get_neighbors(tuple(self.pos), moore=True, include_center=True)
         density = len(neighborhood) / (0.7 * 0.7 * 9)
-
+        print(density)
         if density <= 4:
             self.speed = self.model.move_speed
         elif density >= 8:
@@ -87,6 +87,7 @@ class Pedestrian(mesa.Agent):
         x, y = self.pos
         x_exit, ys_exit = self.door
         if x==x_exit and y in ys_exit:
+            self.speed = 0
             self.model.grid.remove_agent(self)
             self.remove()
             return 
@@ -112,6 +113,7 @@ class Pedestrian(mesa.Agent):
         self.move_to_door(door_cell)
 
     def random_follow(self):
+        self.set_speed()
         Tx = self.pos_x
         self.nearby_leaders = None
         self.leader = None
@@ -177,9 +179,9 @@ class Pedestrian(mesa.Agent):
         neighbor_coords = []
 
         if self.left:
-            possible_coords = [(x-1, y), (x-1, y+1), (x-1, y-1), (x, y-1), (x, y+1)]
+            possible_coords = [(x-1, y), (x-1, y+1), (x-1, y-1), (x, y-1), (x, y+1), (x,y)]
         else:
-            possible_coords = [(x+1, y), (x+1, y+1), (x+1, y-1), (x, y-1), (x, y+1)]
+            possible_coords = [(x+1, y), (x+1, y+1), (x+1, y-1), (x, y-1), (x, y+1), (x,y)]
 
         # Filtrowanie tylko tych, które mieszczą się w siatce
         for coord in possible_coords:
