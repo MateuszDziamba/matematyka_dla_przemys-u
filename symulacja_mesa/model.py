@@ -73,6 +73,7 @@ class Evacuation(mesa.Model):
             for agent in BNE_agents:
                 agent.BNE_type = True
 
+        
         self.running = True
         self.datacollector.collect(self)
         self.calculate_distance_utility()
