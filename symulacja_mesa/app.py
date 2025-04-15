@@ -165,9 +165,33 @@ def post_process_evplot(model):
 
     return inner
 
+@solara.component
+def EvPlot(model):
+    update_counter.get()
+
+    fig = Figure(figsize=(6, 4))
+    ax = fig.subplots()
+
+    df = model.datacollector.get_model_vars_dataframe()
+
+    if not df.empty and "evacuating" in df.columns:
+        step = len(df)
+        agent_door = np.zeros(step)
+        for i in range(1,step):
+            agent_door[i] = - df["evacuating"][i] + df["evacuating"][i-1]
+        ax.plot(range(step), agent_door, color="blue")
+        ax.set_xlabel("Step")
+        ax.set_ylabel("Agent")
+        ax.set_title("Number of agents crossing the door")
+        ax.get_figure().set_size_inches(6, 4)
+        ax.grid(True)
+    else:
+        ax.set_title("No data")
+
+    solara.FigureMatplotlib(fig)
 #liczba osób pozostałych na planszy, wykres liniowy
 model = Evacuation(80, 20, 10)
-EvPlot = make_plot_component("evacuating", post_process=post_process_evplot(model))
+#EvPlot = make_plot_component("evacuating", post_process=post_process_evplot(model))
 
 
 #w dokumentacji Custom Components
