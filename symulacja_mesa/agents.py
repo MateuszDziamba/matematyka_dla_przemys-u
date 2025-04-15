@@ -49,36 +49,40 @@ class Pedestrian(mesa.Agent):
         if density <= 4:
             self.speed = self.model.move_speed
         elif density >= 8:
-            self.speed = self.model.move_speed / 10
+            self.speed = self.model.move_speed / 14
         else:
-            self.speed =  ((8.12-density)/4.12)*self.model.move_speed
+            self.speed =  self.model.move_speed*(0.03*density**2 - 0.64*density +3.36)/1.4
 
 
     def move_to_cell(self, cell):
         cell = np.array(cell)
-        dx = np.sign(cell[0]-self.pos_x)
-        dy = np.sign(cell[1]-self.pos_y)
+        dx = int(np.sign(cell[0]-self.float_position[0]))
+        dy = int(np.sign(cell[1]-self.float_position[1]))
         print("Prędkość", self.speed)
         print("Pozycja:", self.pos)
-        print("pos_x, pos_y", self.pos_x, self.pos_y)
         print("Float_pos:", self.float_position)
         print("Cel: ", cell)
         print("dx, dy", dx, dy)
 
-        #if np.sum(np.sign(self.float_position)*np.floor(np.abs(self.float_position)) == cell)==2: #nowe współrzędne
-        print("warunek")
-        print("abs", abs(self.float_position - cell), ">", self.speed)
-        print(abs(self.float_position - cell) > self.speed)
+        #przesunąć się do celu
+        new_float_pos = self.float_position + np.array([dx*self.speed, dy*self.speed], dtype=float)
+        print("float pos po ruchu", new_float_pos)
         if sum(abs(self.float_position - cell) > self.speed) == 0 :
             self.model.grid.move_agent(self, cell)
             self.prepare_agent()
-            print("RUCH i nowa pozycja ", self.pos, self.float_position)
+            print("zwykły ruch")
+            print("new pos", self.pos)
+        #przesunął się w inne miejsce zygzakiem przez zmienianie zdania
+        elif np.sum(abs(self.pos - new_float_pos) > 1)>0:
+            print("UWAGA - przesunięcie nie do celu")
+            print(new_float_pos)
+            new_int_pos = np.array(self.pos + np.sign(np.floor(new_float_pos-self.pos)), dtype=int)
+            print("new pos", new_int_pos)
+            self.model.grid.move_agent(self, new_int_pos)
+            self.prepare_agent()
         else:
             print("BEZ RUCHU")
             self.float_position += np.array([dx*self.speed, dy*self.speed], dtype=float)
-            print("float_pos", self.pos, self.float_position)
-
-
 
     def distance_to(self, target):
         x, y = self.pos

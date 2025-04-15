@@ -135,8 +135,8 @@ def SpeedPlot(model):
 
     if not df.empty and "speed" in df.columns:
         grouped = df.groupby("Step")["speed"].mean()
-        ax.plot(grouped.index, grouped.values, color="blue")
-        ax.set_ylim((0, 2))
+        ax.plot(grouped.index, 1.4*grouped.values, color="blue")
+        ax.set_ylim((0, 1.5))
         ax.set_title("Avg speed of agents per step")
         ax.set_xlabel("Step")
         ax.set_ylabel("Speed")
