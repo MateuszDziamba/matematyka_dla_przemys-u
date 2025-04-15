@@ -83,6 +83,7 @@ class Pedestrian(mesa.Agent):
         else:
             print("BEZ RUCHU")
             self.float_position += np.array([dx*self.speed, dy*self.speed], dtype=float)
+            self.speed = 0
 
     def distance_to(self, target):
         x, y = self.pos
@@ -202,6 +203,33 @@ class Pedestrian(mesa.Agent):
         if target_patch:
             self.move_to_cell(target_patch)
 
+    def p_avoid(self):
+        x, y = self.pos
+        neighbor_coords = []
+        if self.left:
+            possible_collisions = [(x-1, y)]
+        else:
+            possible_collisions = [(x+1, y)]
+
+        for coord in possible_collisions:
+            if not self.model.grid.out_of_bounds(coord):
+                neighbor_coords.append(coord)
+
+        
+        if neighbor_coords:
+            agents = self.model.grid.get_cell_list_contents(neighbor_coords[0])
+            # liczymy tylko tych agentów, którzy mają przeciwną wartość 'left'
+            number_of_agents = sum(1 for agent in agents if agent.left != self.left)
+        else:
+            number_of_agents = 0            
+        p2, p4 = 0.2, 0.2 #wartości z artykłu
+        p_avoi = [0, 0] #góra, dół po skosie
+
+        p_avoi[0] = 1 - (1 - p2)**number_of_agents
+        p_avoi[1] = 1 - (1 - p4)**number_of_agents
+        return p_avoi
+
+        
     def find_patch_BNE(self):
         x, y = self.pos
         neighbor_coords = []
@@ -218,16 +246,33 @@ class Pedestrian(mesa.Agent):
 
         best_patch = None
         best_utility = -float('inf')
+        possible_collisions = [0,0]
+
+        if self.left:
+            #miejsca z których mogą iść agenci tak by było zderzenie
+            possible_collisions = [(x-1, y +1), (x - 1, y - 1)]
+        else:
+            #miejsca z których mogą iść agenci tak by było zderzenie
+            possible_collisions = [(x+1, y +1), (x+1, y - 1)]
+        p_avoi = self.p_avoid()
 
         for coord in neighbor_coords:
             if self.model.grid.out_of_bounds(coord):
                 continue
-            patch_data = self.model.patch_data.get(coord)
-            if patch_data:
-                total_u = patch_data.get("Ud_lt" if self.left else "Ud_rt", 0) + patch_data.get("Uec", 0)
-                if total_u > best_utility:
-                    best_utility = total_u
-                    best_patch = coord
+
+            if coord == possible_collisions[0] and random.random() < p_avoi[0]:
+                print(p_avoi)
+                continue
+            elif coord == possible_collisions[1] and random.random() < p_avoi[1]:
+                print(p_avoi)
+                continue
+            else:
+                patch_data = self.model.patch_data.get(coord)
+                if patch_data:
+                    total_u = patch_data.get("Ud_lt" if self.left else "Ud_rt", 0) + patch_data.get("Uec", 0)
+                    if total_u > best_utility:
+                        best_utility = total_u
+                        best_patch = coord
 
         return best_patch
     

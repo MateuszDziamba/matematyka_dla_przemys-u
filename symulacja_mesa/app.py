@@ -197,7 +197,7 @@ page = SolaraViz(
         "value": 10,
         "label": "Number of agents:",
         "min": 10,
-        "max": 100,
+        "max": 400,
         "step": 1,
 
         },
