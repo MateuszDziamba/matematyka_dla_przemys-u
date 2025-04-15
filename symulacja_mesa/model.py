@@ -47,7 +47,7 @@ class Evacuation(mesa.Model):
         #poruszanie agentów
         self.move_speed = 1
         self.step_length = None
-        self.probability_competing = 10
+        self.probability_competing = 1/6
         self.percentage_of_BNE = p_BNE/100
         self.weight_Ud = 1.0
 

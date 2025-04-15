@@ -222,7 +222,7 @@ class Pedestrian(mesa.Agent):
             number_of_agents = sum(1 for agent in agents if agent.left != self.left)
         else:
             number_of_agents = 0            
-        p2, p4 = 0.2, 0.2 #wartości z artykłu
+        p2, p4 = self.model.probability_competing, self.model.probability_competing   #wartości z artykłu
         p_avoi = [0, 0] #góra, dół po skosie
 
         p_avoi[0] = 1 - (1 - p2)**number_of_agents
