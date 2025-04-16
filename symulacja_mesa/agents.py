@@ -138,15 +138,8 @@ class Pedestrian(mesa.Agent):
         self.nearby_leaders = None
         self.leader = None
         self.follow = False
-        if self.left:
-            self.nearby_leaders = [agent for agent in self.model.agents if (self.distance_to(agent)[0] > 0 
-                                                                            and self.distance_to(agent)[0]< 3 
-                                                                            and self.distance_to(agent)[1])] #ustawiony dystans na 5, ale można zmienić
-        else:
-            self.nearby_leaders = [agent for agent in self.model.agents if (self.distance_to(agent)[0] > 0 
-                                                                            and self.distance_to(agent)[0]< 3 
-                                                                            and self.distance_to(agent)[1])]
-
+        self.nearby_leaders = [agent for agent in self.model.grid.get_neighbors(tuple(self.pos), moore = True, include_center = False, radius = 2)
+                                    if self.distance_to(agent)[1]] #ustawiony dystans na 3, ale można zmienić
 
         if self.nearby_leaders:
             #self.leader = min(self.nearby_leaders, key=lambda target: self.distance_to(target)[0])

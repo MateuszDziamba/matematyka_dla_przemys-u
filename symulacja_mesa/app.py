@@ -28,6 +28,9 @@ import solara
 from mesa.visualization import SolaraViz, make_plot_component, make_space_component
 from mesa.visualization.utils import update_counter
 from matplotlib.figure import Figure
+import matplotlib.colors as mplc
+import matplotlib as mpl
+
 
 #heatmapa zapisywana do pliku jak wcześniej
 def heatmap():
@@ -88,7 +91,7 @@ def scatter_plot():
 #możemy wykorzystywać informacje o agencie oraz te zebrane przez data.collector (patrz model.py)
 def agent_portrayal(agent):
     if agent.BNE_type:
-        color = "#7b1fa2"
+        color = "#fa6ed7"
     else:
         color = "#1565c0"
     
@@ -206,9 +209,11 @@ def Heatmap(model):
         agent_counts[x][y] = agent_count
     fig = Figure(figsize=(model.grid.width, model.grid.height))
     ax = fig.subplots()
-    sns.heatmap(agent_counts.T, cmap="viridis", annot=True, cbar=True, vmin = 0, vmax = model.number_persons//10, ax=ax)
+    sns.heatmap(agent_counts.T, cmap="mako_r", annot=True, cbar=True,  norm = mplc.LogNorm(vmin=1, vmax=10), ax=ax)
     ax.invert_yaxis()
     solara.FigureMatplotlib(fig)
+
+
 
 
 #definiujemy stronę, wszystkie wykresy które chcemy zdefiniowane
@@ -236,7 +241,7 @@ page = SolaraViz(
         "height": {
         "type": "SliderInt",
         "value": 20,
-        "label": "Width:",
+        "label": "Height:",
         "min": 10,
         "max": 100,
         "step": 10,
@@ -275,3 +280,5 @@ page = SolaraViz(
     name = "Model Ewakuacji"
 )
 page
+
+
