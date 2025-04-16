@@ -73,8 +73,15 @@ class Pedestrian(mesa.Agent):
     def distance_to(self, target):
         x, y = self.pos
         Tx, Ty = target.pos
-        #print(np.sqrt((x - Tx)**2 + (y - Ty)**2))
-        return np.sqrt((x - Tx)**2 + (y - Ty)**2)
+        dx = Tx - x
+        dy = Ty - y
+        angle_rad = math.atan2(dy, dx)
+        correct_angle = True
+        if self.left:
+            correct_angle = (angle_rad > 2/3*np.pi or angle_rad < -2/3*np.pi)
+        else:
+            correct_angle = (angle_rad < 1/3*np.pi and angle_rad > -1/3*np.pi)
+        return np.sqrt(dx**2 + dy**2), correct_angle
     
     def find_closest_door_cell(self):
         x, y = self.pos
@@ -134,14 +141,14 @@ class Pedestrian(mesa.Agent):
         self.follow = False
         if self.left:
             self.nearby_leaders = [agent for agent in self.model.agents if (agent.pos_x < Tx 
-                                   and self.distance_to(agent) > 0 and self.distance_to(agent)< 3)] #ustawiony dystans na 5, ale można zmienić
+                                   and self.distance_to(agent)[0] > 0 and self.distance_to(agent)[0]< 3 and self.distance_to(agent)[1])] #ustawiony dystans na 5, ale można zmienić
         else:
             self.nearby_leaders = [agent for agent in self.model.agents if (agent.pos_x > Tx 
-                                   and self.distance_to(agent) > 0 and self.distance_to(agent)< 3)]
+                                   and self.distance_to(agent)[0] > 0 and self.distance_to(agent)[0]< 3 and self.distance_to(agent)[1])]
 
 
         if self.nearby_leaders:
-            self.leader = min(self.nearby_leaders, key=lambda target: self.distance_to(target))
+            self.leader = min(self.nearby_leaders, key=lambda target: self.distance_to(target)[0])
             self.follow = True
         else:
             self.leader = None
