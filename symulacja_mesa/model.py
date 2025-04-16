@@ -23,7 +23,7 @@ import random
 import math
 
 class Evacuation(mesa.Model):
-    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=10, model_type = "BNE_mixed_SR", p_BNE = 100):
+    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=None, model_type = "BNE_mixed_SR", p_BNE = 100):
         super().__init__(seed=seed)
         self.patch_data = {}
         self.number_persons = n
@@ -53,7 +53,7 @@ class Evacuation(mesa.Model):
 
         self.datacollector = mesa.DataCollector(
             model_reporters={"evacuating": self.compute_agents},
-            agent_reporters={"x": "pos_x", "y": "pos_y", "speed": "speed"}
+            agent_reporters={"speed": "speed"}
         )
 
 
@@ -80,7 +80,10 @@ class Evacuation(mesa.Model):
         self.calculate_expected_comfort()
 
     def compute_agents(self):
-        return len(self.agents.get("exited"))
+        if len(self.agents.get("exited"))>0:
+            return len(self.agents.get("exited"))
+        else:
+            self.running=False
 
     def step(self):
         #funkcja shuffle_do miesza listę agentów i wykonuje podaną funkcję
@@ -118,7 +121,7 @@ class Evacuation(mesa.Model):
             }
     
     def calculate_expected_comfort(self):
-        Pm = self.probability_competing / 100
+        Pm = self.probability_competing
 
         for _, (x, y) in self.grid.coord_iter():
             neighbors = self.grid.get_neighbors((x, y), moore=True, include_center=False)

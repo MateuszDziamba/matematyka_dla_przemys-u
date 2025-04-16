@@ -44,8 +44,6 @@ class Pedestrian(mesa.Agent):
     def set_speed(self):
         neighborhood = self.model.grid.get_neighbors(tuple(self.pos), moore=True, include_center=True)
         density = len(neighborhood) / (0.7 * 0.7 * 9)
-        print("============ Agent", self.unique_id)
-        print("density", density)
         if density <= 4:
             self.speed = self.model.move_speed
         elif density >= 8:
@@ -58,32 +56,19 @@ class Pedestrian(mesa.Agent):
         cell = np.array(cell)
         dx = int(np.sign(cell[0]-self.float_position[0]))
         dy = int(np.sign(cell[1]-self.float_position[1]))
-        print("Prędkość", self.speed)
-        print("Pozycja:", self.pos)
-        print("Float_pos:", self.float_position)
-        print("Cel: ", cell)
-        print("dx, dy", dx, dy)
 
         #przesunąć się do celu
         new_float_pos = self.float_position + np.array([dx*self.speed, dy*self.speed], dtype=float)
-        print("float pos po ruchu", new_float_pos)
         if sum(abs(self.float_position - cell) > self.speed) == 0 :
             self.model.grid.move_agent(self, cell)
             self.prepare_agent()
-            print("zwykły ruch")
-            print("new pos", self.pos)
         #przesunął się w inne miejsce zygzakiem przez zmienianie zdania
         elif np.sum(abs(self.pos - new_float_pos) > 1)>0:
-            print("UWAGA - przesunięcie nie do celu")
-            print(new_float_pos)
             new_int_pos = np.array(self.pos + np.sign(np.floor(new_float_pos-self.pos)), dtype=int)
-            print("new pos", new_int_pos)
             self.model.grid.move_agent(self, new_int_pos)
             self.prepare_agent()
         else:
-            print("BEZ RUCHU")
             self.float_position += np.array([dx*self.speed, dy*self.speed], dtype=float)
-            self.speed = 0
 
     def distance_to(self, target):
         x, y = self.pos
@@ -149,15 +134,14 @@ class Pedestrian(mesa.Agent):
         self.follow = False
         if self.left:
             self.nearby_leaders = [agent for agent in self.model.agents if (agent.pos_x < Tx 
-                                   and self.distance_to(agent) > 0 and self.distance_to(agent)< 5)] #ustawiony dystans na 5, ale można zmienić
+                                   and self.distance_to(agent) > 0 and self.distance_to(agent)< 3)] #ustawiony dystans na 5, ale można zmienić
         else:
             self.nearby_leaders = [agent for agent in self.model.agents if (agent.pos_x > Tx 
-                                   and self.distance_to(agent) > 0 and self.distance_to(agent)< 5)]
+                                   and self.distance_to(agent) > 0 and self.distance_to(agent)< 3)]
 
 
         if self.nearby_leaders:
             self.leader = min(self.nearby_leaders, key=lambda target: self.distance_to(target))
-            print(self.distance_to(self.leader))
             self.follow = True
         else:
             self.leader = None
@@ -261,10 +245,10 @@ class Pedestrian(mesa.Agent):
                 continue
 
             if coord == possible_collisions[0] and random.random() < p_avoi[0]:
-                print(p_avoi)
+                #print(p_avoi)
                 continue
             elif coord == possible_collisions[1] and random.random() < p_avoi[1]:
-                print(p_avoi)
+                #print(p_avoi)
                 continue
             else:
                 patch_data = self.model.patch_data.get(coord)

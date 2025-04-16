@@ -221,8 +221,8 @@ page = SolaraViz(
         "value": 10,
         "label": "Number of agents:",
         "min": 10,
-        "max": 400,
-        "step": 1,
+        "max": 3000,
+        "step": 10,
 
         },
         "width": {
@@ -233,7 +233,14 @@ page = SolaraViz(
         "max": 100,
         "step": 10,
         },
-        "height": 10,
+        "height": {
+        "type": "SliderInt",
+        "value": 20,
+        "label": "Width:",
+        "min": 10,
+        "max": 100,
+        "step": 10,
+        },
         "door_width":{
         "type": "SliderInt",
         "value": 4,
