@@ -125,13 +125,20 @@ def post_process(model):
                 if y not in y_set:
                     ax.plot([wall_x, wall_x], [y - 0.5, y + 0.5], color='black', linewidth=6)
     return inner
-
+def ScatterPlot(model):
+    if not model.agents:
+        return solara.Markdown("## Ewakuacja zakończona")
+    model.step_callback = True
+    #property_layers = exits_portrayal(model)
+    return make_space_component(agent_portrayal, post_process=post_process(model))(model)
+ 
 
 @solara.component
 def SpeedPlot(model):
     update_counter.get()
 
-    fig = Figure(figsize=(6, 4))
+    fig = Figure(figsize=(model.grid.width//2, model.grid.height//2))
+    #fig = Figure(figsize=(model.grid.width//2,model.grid.height//2))
     ax = fig.subplots()
 
     df = model.datacollector.get_agent_vars_dataframe()
@@ -150,13 +157,7 @@ def SpeedPlot(model):
 
     solara.FigureMatplotlib(fig)
 
-def ScatterPlot(model):
-    if not model.agents:
-        return solara.Markdown("## Ewakuacja zakończona")
-    model.step_callback = True
-    #property_layers = exits_portrayal(model)
-    return make_space_component(agent_portrayal, post_process=post_process(model))(model)
- 
+
 def post_process_evplot(model):
     def inner(ax):
         ax.set_ylim(-2, model.number_persons + 2)
@@ -172,7 +173,8 @@ def post_process_evplot(model):
 def EvPlot(model):
     update_counter.get()
 
-    fig = Figure(figsize=(6, 4))
+    fig = Figure(figsize=(model.grid.width//2, model.grid.height//2))
+    #fig = Figure(figsize=(model.grid.width//2,model.grid.height//2))
     ax = fig.subplots()
 
     df = model.datacollector.get_model_vars_dataframe()
@@ -186,16 +188,12 @@ def EvPlot(model):
         ax.set_xlabel("Step")
         ax.set_ylabel("Agent")
         ax.set_title("Number of agents crossing the door")
-        ax.get_figure().set_size_inches(6, 4)
+        #ax.get_figure().set_size_inches(6, 4)
         ax.grid(True)
     else:
         ax.set_title("No data")
 
     solara.FigureMatplotlib(fig)
-#liczba osób pozostałych na planszy, wykres liniowy
-model = Evacuation(80, 20, 10)
-#EvPlot = make_plot_component("evacuating", post_process=post_process_evplot(model))
-
 
 #w dokumentacji Custom Components
 #https://mesa.readthedocs.io/stable/tutorials/visualization_tutorial.html
@@ -209,24 +207,40 @@ def Heatmap(model):
         agent_counts[x][y] = agent_count
     fig = Figure(figsize=(model.grid.width, model.grid.height))
     ax = fig.subplots()
+    ax.set_title("Pedestrians density")
     sns.heatmap(agent_counts.T, cmap="mako_r", annot=True, cbar=True,  norm = mplc.LogNorm(vmin=1, vmax=10), ax=ax)
     ax.invert_yaxis()
-    solara.FigureMatplotlib(fig)
+    solara.FigureMatplotlib(fig, bbox_inches = 'tight')
 
 
+#### ładniejszy układ strony (nie nachodzą na siebie przy zmianie rozmiarów) ################
+@solara.component
+def CombinedPlot(model):
+    update_counter.get()
+    #with solara.Row(gap='20px'):
+    with solara.Card(elevation=5):
+        with solara.Columns():
+            ScatterPlot(model)
+            Heatmap(model) 
+
+    with solara.Card(elevation=1):        
+        with solara.Columns():
+            EvPlot(model)
+            SpeedPlot(model)
 
 
-#definiujemy stronę, wszystkie wykresy które chcemy zdefiniowane
-#wyżej wpisujemy w components (nie muszą być wszystkie na raz)
+model = Evacuation(80, 20, 10)
 page = SolaraViz(
     model,
+    play_interval=1,
+    render_interval=1,
     model_params={
         "n": {
         "type": "SliderInt",
-        "value": 10,
+        "value": 80,
         "label": "Number of agents:",
         "min": 10,
-        "max": 3000,
+        "max": 1000,
         "step": 10,
 
         },
@@ -235,15 +249,15 @@ page = SolaraViz(
         "value": 20,
         "label": "Width:",
         "min": 10,
-        "max": 100,
+        "max": 50,
         "step": 10,
         },
         "height": {
         "type": "SliderInt",
-        "value": 20,
+        "value": 10,
         "label": "Height:",
         "min": 10,
-        "max": 100,
+        "max": 30,
         "step": 10,
         },
         "door_width":{
@@ -256,7 +270,7 @@ page = SolaraViz(
         },
         "p_BNE":{
         "type": "SliderInt",
-        "value": 50,
+        "value": 100,
         "label": "Percent of agents BNE:",
         "min": 0,
         "max": 100,
@@ -271,14 +285,8 @@ page = SolaraViz(
 
         }
     },
-    components=[
-        ScatterPlot,
-     Heatmap,
-    EvPlot,
-    SpeedPlot
-    ],
-    name = "Model Ewakuacji"
+    components=
+        [CombinedPlot]
+    ,
+    name = "Model Ewakuacji",
 )
-page
-
-

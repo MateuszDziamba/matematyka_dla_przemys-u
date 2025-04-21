@@ -11,13 +11,17 @@ class Pedestrian(mesa.Agent):
         self.follow = True
         self.BNE_type = None
         self.nearby_leaders = None
-        self.leader = False
+        self.leader = None
         self.door = self.get_door()
         self.exited = False
         self.pos_x = None
         self.pos_y = None
         self.color = "blue"
         self.float_position = None
+        #self.movement_buffer = np.array([0.0, 0.0])
+        self.follow_patience = random.randint(5, 15)  # how many steps we tolerate following
+        self.follow_timer = 0  # how long following the current leader
+
 
 
     def get_door(self):
@@ -69,6 +73,7 @@ class Pedestrian(mesa.Agent):
             self.prepare_agent()
         else:
             self.float_position += np.array([dx*self.speed, dy*self.speed], dtype=float)
+
 
     def distance_to(self, target):
         x, y = self.pos
@@ -138,7 +143,7 @@ class Pedestrian(mesa.Agent):
         self.nearby_leaders = None
         self.leader = None
         self.follow = False
-        self.nearby_leaders = [agent for agent in self.model.grid.get_neighbors(tuple(self.pos), moore = True, include_center = False, radius = 2)
+        self.nearby_leaders = [agent for agent in self.model.grid.get_neighbors(tuple(self.pos), moore = True, include_center = False, radius = 3)
                                     if self.distance_to(agent)[1]] #ustawiony dystans na 3, ale można zmienić
 
         if self.nearby_leaders:
@@ -153,6 +158,7 @@ class Pedestrian(mesa.Agent):
             self.face_leader()
         else:
             self.shortest_route()
+
 
 
     def face_leader(self):
