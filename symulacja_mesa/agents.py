@@ -83,9 +83,9 @@ class Pedestrian(mesa.Agent):
         angle_rad = math.atan2(dy, dx)
         correct_angle = True
         if self.left:
-            correct_angle = (angle_rad > 2/3*np.pi or angle_rad < -2/3*np.pi)
+            correct_angle = (angle_rad > 5/6*np.pi or angle_rad < -5/6*np.pi)
         else:
-            correct_angle = (angle_rad < 1/3*np.pi and angle_rad > -1/3*np.pi)
+            correct_angle = (angle_rad < 1/6*np.pi and angle_rad > -1/6*np.pi) #30 stopni w każdą stronę
         return np.sqrt(dx**2 + dy**2), correct_angle
     
     def find_closest_door_cell(self):
