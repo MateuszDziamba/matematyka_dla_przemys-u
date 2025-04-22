@@ -45,7 +45,7 @@ def heatmap():
             agent_count = len(cell_content)
             agent_counts[x][y] = agent_count
         plt.figure(figsize=(model.grid.width, model.grid.height))
-        sns.heatmap(agent_counts.T, cmap="viridis", annot=True, cbar=True, vmin = 0, vmax = model.number_persons//10)
+        sns.heatmap(agent_counts.T,  cmap="mako_r", annot=True, cbar=True,  norm = mplc.LogNorm(vmin=1, vmax=10))
         plt.gca().invert_yaxis()
         plt.title(f"Step {step_num}")
         frame_path = f"plots/frame_{step_num:03}.png"
@@ -58,7 +58,7 @@ def heatmap():
     #pusta plansza na koniec
     agent_counts = np.zeros((model.grid.width, model.grid.height))
     plt.figure(figsize=(model.grid.width, model.grid.height))
-    sns.heatmap(agent_counts.T, cmap="viridis", annot=True, cbar=True, vmin = 0, vmax = model.number_persons//10)
+    sns.heatmap(agent_counts.T, cmap="viridis", annot=True, cbar=True, vmin = 0, vmax = 10)
     plt.gca().invert_yaxis()
     plt.title(f"Step {step_num}")
     frame_path = f"plots/frame_{step_num:03}.png"
@@ -76,6 +76,7 @@ def heatmap():
 
     for path in frame_paths:
         os.remove(path)
+
 
 #testowo, solara domyślnie robi taki plot - patrz niżej ScatterPlot
 def scatter_plot():

@@ -45,6 +45,7 @@ class Pedestrian(mesa.Agent):
         new_position = self.random.choice(possible_steps)
         self.model.grid.move_agent(self, new_position)
 
+
     def set_speed(self):
         neighborhood = self.model.grid.get_neighbors(tuple(self.pos), moore=True, include_center=True)
         density = len(neighborhood) / (0.7 * 0.7 * 9)
@@ -63,14 +64,26 @@ class Pedestrian(mesa.Agent):
 
         #przesunąć się do celu
         new_float_pos = self.float_position + np.array([dx*self.speed, dy*self.speed], dtype=float)
-        if sum(abs(self.float_position - cell) > self.speed) == 0 :
-            self.model.grid.move_agent(self, cell)
-            self.prepare_agent()
+        if sum(abs(self.float_position - cell) > self.speed) == 0:
+            if not self.model.grid.out_of_bounds(cell):
+                self.model.grid.move_agent(self, cell)
+                self.prepare_agent()
+            else:
+                self.speed = 0
+                self.model.grid.remove_agent(self)
+                self.remove()
+                return
         #przesunął się w inne miejsce zygzakiem przez zmienianie zdania
         elif np.sum(abs(self.pos - new_float_pos) > 1)>0:
             new_int_pos = np.array(self.pos + np.sign(np.floor(new_float_pos-self.pos)), dtype=int)
-            self.model.grid.move_agent(self, new_int_pos)
-            self.prepare_agent()
+            if not self.model.grid.out_of_bounds(new_int_pos):
+                self.model.grid.move_agent(self, new_int_pos)
+                self.prepare_agent()
+            else:
+                self.speed = 0
+                self.model.grid.remove_agent(self)
+                self.remove()
+                return
         else:
             self.float_position += np.array([dx*self.speed, dy*self.speed], dtype=float)
 
@@ -171,7 +184,14 @@ class Pedestrian(mesa.Agent):
         else:
             dx = np.sign(leader_x - x)
             dy = np.sign(leader_y - y)
-            self.move_to_cell((x + dx, y + dy))
+            print(self.model.grid.out_of_bounds((x+dx, y+dy)))
+            if not self.model.grid.out_of_bounds((x+dx, y+dy)):
+                self.move_to_cell((x + dx, y + dy))
+
+            else:
+                print("UWAGA")
+                print(self.model.grid.out_of_bounds((x+dx, y+dy)))
+                print("x, y", x,y, "dx, dy", dx, dy)
     
     def stop_following(self):
         self.leader = None
