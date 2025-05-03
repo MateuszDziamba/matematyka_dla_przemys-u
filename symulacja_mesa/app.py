@@ -91,6 +91,8 @@ def agent_portrayal(agent):
         color = "#7b1fa2"
     else:
         color = "#1565c0"
+    if agent.Obstacle_type:
+        color = "#000000"
     
     return {
         "x": agent.pos[0],

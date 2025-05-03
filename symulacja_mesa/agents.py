@@ -6,19 +6,21 @@ import random
 class Pedestrian(mesa.Agent):
     def __init__(self, model):
         super().__init__(model)
+        self.left = True
         self.speed = model.move_speed
-        self.left = random.choice([True, False])
         self.follow = True
         self.BNE_type = None
         self.nearby_leaders = None
         self.leader = False
         self.door = self.get_door()
         self.exited = False
+        self.pos = None
         self.pos_x = None
         self.pos_y = None
         self.color = "blue"
         self.float_position = None
-
+        self.Obstacle_type = False
+        self.door_decision = False
 
     def get_door(self):
         return self.model.exits['left' if self.left else 'right']
@@ -96,6 +98,31 @@ class Pedestrian(mesa.Agent):
         self.pos_x = x
         self.pos_y = y
         self.float_position = np.array(self.pos, dtype=float)
+        
+        '''
+        if self.left:
+            if self.pos[0] == self.model.exits['left'][0] and self.pos[1] in self.model.exits['left'][1]:
+                self.exited = True
+                self.remove()
+                return
+        else:
+            if self.pos[0] == self.model.exits['right'][0] and self.pos[1] in self.model.exits['right'][1]:
+                self.exited = True
+                self.remove()
+                return
+        '''
+        if not self.door_decision:
+            coords = (self.pos_x, self.pos_y)
+            patch_data = self.model.patch_data.get(coords)
+            left_door_distance = patch_data.get("Ud_lt", 0)
+            right_door_distance = patch_data.get("Ud_rt", 0)
+            if left_door_distance < right_door_distance:
+                self.left = True
+            else:
+                self.left = False
+                
+            self.door = self.get_door()
+            self.door_decision = True
 
     def decide(self):
         x, y = self.pos
@@ -105,7 +132,14 @@ class Pedestrian(mesa.Agent):
             self.model.grid.remove_agent(self)
             self.remove()
             return 
-        
+    
+        #usunięcie agentów w ścianach - jest ich mniej
+        if self.model.obstacles_map[x, y] == 1:
+                self.speed = 0
+                self.model.grid.remove_agent(self)
+                self.remove()
+                return
+                
         if self.model.moving_pattern == "SR":
             self.shortest_route()
         if self.model.moving_pattern == "RF":
@@ -122,9 +156,40 @@ class Pedestrian(mesa.Agent):
                 self.random_follow()
 
     def shortest_route(self):
-        self.set_speed()
-        door_cell = self.find_closest_door_cell()
-        self.move_to_door(door_cell)
+        #self.set_speed()
+        #door_cell = self.find_closest_door_cell()
+        #self.move_to_door(door_cell)
+        
+        x, y = self.pos
+        neighbor_coords = []
+
+        if self.left:
+            possible_coords = [(x-1, y), (x-1, y+1), (x-1, y-1), (x, y-1), (x, y+1), (x,y)]
+        else:
+            possible_coords = [(x+1, y), (x+1, y+1), (x+1, y-1), (x, y-1), (x, y+1), (x,y)]
+
+        # Filtrowanie tylko tych, które mieszczą się w siatce oraz nie są przeszkodami
+        for coord in possible_coords:
+            if not self.model.grid.out_of_bounds(coord):
+                if self.model.obstacles_map[coord[0], coord[1]] == 0:
+                    neighbor_coords.append(coord)
+        
+        best_patch = None
+        best_utility = -float('inf')
+        
+        for coord in neighbor_coords:
+            if self.model.grid.out_of_bounds(coord):
+                continue
+            else:
+                patch_data = self.model.patch_data.get(coord)
+                if patch_data:
+                    move_u = patch_data.get("Ud_lt" if self.left else "Ud_rt", 0)
+                    if move_u > best_utility:
+                        best_utility = move_u
+                        best_patch = coord
+                        
+        self.move_to_cell(best_patch)
+        
 
     def random_follow(self):
         self.set_speed()
@@ -197,7 +262,8 @@ class Pedestrian(mesa.Agent):
 
         for coord in possible_collisions:
             if not self.model.grid.out_of_bounds(coord):
-                neighbor_coords.append(coord)
+                if self.model.obstacles_map[coord[0], coord[1]] == 0:
+                    neighbor_coords.append(coord)
 
         
         if neighbor_coords:
@@ -223,10 +289,11 @@ class Pedestrian(mesa.Agent):
         else:
             possible_coords = [(x+1, y), (x+1, y+1), (x+1, y-1), (x, y-1), (x, y+1), (x,y)]
 
-        # Filtrowanie tylko tych, które mieszczą się w siatce
+        # Filtrowanie tylko tych, które mieszczą się w siatce oraz nie są przeszkodami
         for coord in possible_coords:
             if not self.model.grid.out_of_bounds(coord):
-                neighbor_coords.append(coord)
+                if self.model.obstacles_map[coord[0], coord[1]] == 0:
+                    neighbor_coords.append(coord)
 
         best_patch = None
         best_utility = -float('inf')
@@ -260,3 +327,22 @@ class Pedestrian(mesa.Agent):
 
         return best_patch
     
+class Obstacle(mesa.Agent):
+    def __init__(self, model, x, y):
+        super().__init__(model)
+        self.color = "black"
+        self.pos_x = x
+        self.pos_y = y
+        self.model.grid.place_agent(self, (x, y))
+        self.exited = True
+        self.BNE_type = False
+        self.Obstacle_type = True
+        self.leader = False
+        self.follow = False 
+        self.left = False
+        self.speed = 0
+        self.float_position = None
+
+    def decide(self):
+        pass    
+        
