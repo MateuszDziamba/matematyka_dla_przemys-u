@@ -11,7 +11,7 @@ class Pedestrian(mesa.Agent):
         self.follow = True
         self.BNE_type = None
         self.nearby_leaders = None
-        self.leader = False
+        self.leader = None
         self.door = self.get_door()
         self.exited = False
         self.pos = None
@@ -21,6 +21,11 @@ class Pedestrian(mesa.Agent):
         self.float_position = None
         self.Obstacle_type = False
         self.door_decision = False
+        #self.movement_buffer = np.array([0.0, 0.0])
+        self.follow_patience = random.randint(5, 15)  # how many steps we tolerate following
+        self.follow_timer = 0  # how long following the current leader
+
+
 
     def get_door(self):
         return self.model.exits['left' if self.left else 'right']
@@ -43,6 +48,7 @@ class Pedestrian(mesa.Agent):
         new_position = self.random.choice(possible_steps)
         self.model.grid.move_agent(self, new_position)
 
+
     def set_speed(self):
         neighborhood = self.model.grid.get_neighbors(tuple(self.pos), moore=True, include_center=True)
         density = len(neighborhood) / (0.7 * 0.7 * 9)
@@ -61,22 +67,42 @@ class Pedestrian(mesa.Agent):
 
         #przesunąć się do celu
         new_float_pos = self.float_position + np.array([dx*self.speed, dy*self.speed], dtype=float)
-        if sum(abs(self.float_position - cell) > self.speed) == 0 :
-            self.model.grid.move_agent(self, cell)
-            self.prepare_agent()
+        if sum(abs(self.float_position - cell) > self.speed) == 0:
+            if not self.model.grid.out_of_bounds(cell):
+                self.model.grid.move_agent(self, cell)
+                self.prepare_agent()
+            else:
+                self.speed = 0
+                self.model.grid.remove_agent(self)
+                self.remove()
+                return
         #przesunął się w inne miejsce zygzakiem przez zmienianie zdania
         elif np.sum(abs(self.pos - new_float_pos) > 1)>0:
             new_int_pos = np.array(self.pos + np.sign(np.floor(new_float_pos-self.pos)), dtype=int)
-            self.model.grid.move_agent(self, new_int_pos)
-            self.prepare_agent()
+            if not self.model.grid.out_of_bounds(new_int_pos):
+                self.model.grid.move_agent(self, new_int_pos)
+                self.prepare_agent()
+            else:
+                self.speed = 0
+                self.model.grid.remove_agent(self)
+                self.remove()
+                return
         else:
             self.float_position += np.array([dx*self.speed, dy*self.speed], dtype=float)
+
 
     def distance_to(self, target):
         x, y = self.pos
         Tx, Ty = target.pos
-        #print(np.sqrt((x - Tx)**2 + (y - Ty)**2))
-        return np.sqrt((x - Tx)**2 + (y - Ty)**2)
+        dx = Tx - x
+        dy = Ty - y
+        angle_rad = math.atan2(dy, dx)
+        correct_angle = True
+        if self.left:
+            correct_angle = (angle_rad > 5/6*np.pi or angle_rad < -5/6*np.pi)
+        else:
+            correct_angle = (angle_rad < 1/6*np.pi and angle_rad > -1/6*np.pi) #30 stopni w każdą stronę
+        return np.sqrt(dx**2 + dy**2), correct_angle
     
     def find_closest_door_cell(self):
         x, y = self.pos
@@ -193,39 +219,25 @@ class Pedestrian(mesa.Agent):
 
     def random_follow(self):
         self.set_speed()
-        Tx = self.pos_x
         self.nearby_leaders = None
         self.leader = None
         self.follow = False
-        if self.left:
-            self.nearby_leaders = [agent for agent in self.model.agents if (agent.pos_x < Tx 
-                                   and self.distance_to(agent) > 0 and self.distance_to(agent)< 3)] #ustawiony dystans na 5, ale można zmienić
-        else:
-            self.nearby_leaders = [agent for agent in self.model.agents if (agent.pos_x > Tx 
-                                   and self.distance_to(agent) > 0 and self.distance_to(agent)< 3)]
-
+        self.nearby_leaders = [agent for agent in self.model.grid.get_neighbors(tuple(self.pos), moore = True, include_center = False, radius = 3)
+                                    if self.distance_to(agent)[1]] #ustawiony dystans na 3, ale można zmienić
 
         if self.nearby_leaders:
-            self.leader = min(self.nearby_leaders, key=lambda target: self.distance_to(target))
+            #self.leader = min(self.nearby_leaders, key=lambda target: self.distance_to(target)[0])
+            self.leader = random.choice(self.nearby_leaders)
             self.follow = True
         else:
             self.leader = None
             self.follow = False
 
         if self.follow:    
-            if self.left:
-                if self.leader.pos_x < Tx :
-                    self.face_leader()               
-                else:
-                    self.stop_following()
-            else:
-                if self.leader.pos_x > Tx:
-                    
-                    self.face_leader()                    
-                else:
-                    self.stop_following()
+            self.face_leader()
         else:
             self.shortest_route()
+
 
 
     def face_leader(self):
@@ -238,7 +250,14 @@ class Pedestrian(mesa.Agent):
         else:
             dx = np.sign(leader_x - x)
             dy = np.sign(leader_y - y)
-            self.move_to_cell((x + dx, y + dy))
+            print(self.model.grid.out_of_bounds((x+dx, y+dy)))
+            if not self.model.grid.out_of_bounds((x+dx, y+dy)):
+                self.move_to_cell((x + dx, y + dy))
+
+            else:
+                print("UWAGA")
+                print(self.model.grid.out_of_bounds((x+dx, y+dy)))
+                print("x, y", x,y, "dx, dy", dx, dy)
     
     def stop_following(self):
         self.leader = None
