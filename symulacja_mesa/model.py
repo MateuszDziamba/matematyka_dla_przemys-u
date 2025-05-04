@@ -37,28 +37,46 @@ class Evacuation(mesa.Model):
         self.grid = mesa.space.MultiGrid(width, height, False)
         
         self.moving_pattern = model_type
-        
-        #przeszkody
-        self.obstacles_map = np.zeros((self.grid.width, self.grid.height))
-        for i in range(1,self.grid.height-1):
-            self.obstacles_map[1, i] = 1
-            Obstacle(self, 1, i)
-            
-        for i in range(self.grid.width//2, self.grid.width):
-            self.obstacles_map[i,3*(self.grid.height//4)] = 1
-            self.obstacles_map[i,self.grid.height//4 - 1] = 1
-            Obstacle(self, i, 3*(self.grid.height//4 ))
-            Obstacle(self, i, self.grid.height//4 - 1)
+        self.right_door_only = True #można dodać do tego przycisk żeby zmieniać
     
         #exits
         self.door_width = door_width
         self.exit_width = None
-        self.exits = {''
-        #x  #ys - wysokosc drzwi - na razie ręcznie, można dodać suwak, przy parzystych wychodzi +1 szerokość (ze środkiem)
-        # Zmieniłam bez +1, bo przy parzystej wysokości wyjściowej nie wychodziło równo
-        'left': [0, [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2) )] ],
-        'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2))]]}
+        if self.right_door_only:
+            self.exits = {''
+            'left': [0,[]],
+            'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2))]]}
+        else:
+            self.exits = {''
+            #x  #ys - wysokosc drzwi - na razie ręcznie, można dodać suwak, przy parzystych wychodzi +1 szerokość (ze środkiem)
+            # Zmieniłam bez +1, bo przy parzystej wysokości wyjściowej nie wychodziło równo
+            'left': [0, [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2) )] ],
+            'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2))]]}
 
+        #przeszkody
+        self.obstacles_map = np.zeros((self.grid.width, self.grid.height))
+        
+        #---------mapa_wymagająca_cofania------------------
+        #for i in range(1,self.grid.height-1):
+        #    self.obstacles_map[1, i] = 1
+        #    Obstacle(self, 1, i)
+            
+        #for i in range(self.grid.width//2, self.grid.width):
+        #    self.obstacles_map[i,self.grid.height//2 - (self.door_width//2) - 1] = 1
+        #    self.obstacles_map[i,self.grid.height//2 + (self.door_width//2)] = 1
+        #    Obstacle(self, i, self.grid.height//2 - (self.door_width//2) - 1)
+        #    Obstacle(self, i, self.grid.height//2 + (self.door_width//2))
+        #--------------------------------------------------
+        
+        #---------mapa_z_artykułu---------------------
+        for i in range(self.grid.width//2, self.grid.width-2):
+            for j in range(self.grid.height//2 - 3):
+                self.obstacles_map[i,self.grid.height - 3 - j] = 1
+                self.obstacles_map[i, j + 2] = 1
+                Obstacle(self, i, self.grid.height - 3 - j)
+                Obstacle(self, i, j + 2)
+        
+        
         #poruszanie agentów
         self.move_speed = 1
         self.step_length = None
@@ -171,11 +189,13 @@ class Evacuation(mesa.Model):
             return distance
 
         # Lista pozycji drzwi
-        left_door_positions = [(self.exits['left'][0], y) for y in self.exits['left'][1]]
+        if not self.right_door_only:
+            left_door_positions = [(self.exits['left'][0], y) for y in self.exits['left'][1]]
         right_door_positions = [(self.exits['right'][0], y) for y in self.exits['right'][1]]
 
         # Oblicz odległości
-        dist_to_left = dijkstra(left_door_positions)
+        if not self.right_door_only:
+            dist_to_left = dijkstra(left_door_positions)
         dist_to_right = dijkstra(right_door_positions)
 
         # Przelicz użyteczność
@@ -193,18 +213,29 @@ class Evacuation(mesa.Model):
                     }
                     test_map[x][y] = -1*self.weight_Ud
                 else:
-                    D_lt = dist_to_left[x, y]
-                    D_rt = dist_to_right[x, y]
+                    if not self.right_door_only:
+                        D_lt = dist_to_left[x, y]
+                        D_rt = dist_to_right[x, y]
 
-                    Ud_lt = (1 - (D_lt / diagonal)) * self.weight_Ud if not np.isinf(D_lt) else 0
-                    Ud_rt = (1 - (D_rt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
+                        Ud_lt = (1 - (D_lt / diagonal)) * self.weight_Ud if not np.isinf(D_lt) else 0
+                        Ud_rt = (1 - (D_rt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
 
-                    self.patch_data[(x, y)] = {
-                        **self.patch_data.get((x, y), {}),
-                        "Ud_lt": Ud_lt,
-                        "Ud_rt": Ud_rt
-                    }
-                    test_map[x][y] = Ud_rt
+                        self.patch_data[(x, y)] = {
+                            **self.patch_data.get((x, y), {}),
+                            "Ud_lt": Ud_lt,
+                            "Ud_rt": Ud_rt
+                        }
+                        test_map[x][y] = Ud_rt
+                    else:
+                        D_rt = dist_to_right[x, y]
+
+                        Ud_rt = (1 - (D_rt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
+
+                        self.patch_data[(x, y)] = {
+                            **self.patch_data.get((x, y), {}),
+                            "Ud_rt": Ud_rt
+                        }
+                        test_map[x][y] = Ud_rt
         
         plt.clf()
         plt.figure(figsize=(20, 20))

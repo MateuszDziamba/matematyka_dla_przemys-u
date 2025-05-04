@@ -6,7 +6,7 @@ import random
 class Pedestrian(mesa.Agent):
     def __init__(self, model):
         super().__init__(model)
-        self.left = True
+        self.left = False
         self.speed = model.move_speed
         self.follow = True
         self.BNE_type = None
@@ -24,8 +24,6 @@ class Pedestrian(mesa.Agent):
         #self.movement_buffer = np.array([0.0, 0.0])
         self.follow_patience = random.randint(5, 15)  # how many steps we tolerate following
         self.follow_timer = 0  # how long following the current leader
-
-
 
     def get_door(self):
         return self.model.exits['left' if self.left else 'right']
@@ -125,19 +123,7 @@ class Pedestrian(mesa.Agent):
         self.pos_y = y
         self.float_position = np.array(self.pos, dtype=float)
         
-        '''
-        if self.left:
-            if self.pos[0] == self.model.exits['left'][0] and self.pos[1] in self.model.exits['left'][1]:
-                self.exited = True
-                self.remove()
-                return
-        else:
-            if self.pos[0] == self.model.exits['right'][0] and self.pos[1] in self.model.exits['right'][1]:
-                self.exited = True
-                self.remove()
-                return
-        '''
-        if not self.door_decision:
+        if (not self.door_decision) and (not self.model.right_door_only):
             coords = (self.pos_x, self.pos_y)
             patch_data = self.model.patch_data.get(coords)
             left_door_distance = patch_data.get("Ud_lt", 0)
@@ -159,7 +145,7 @@ class Pedestrian(mesa.Agent):
             self.remove()
             return 
     
-        #usunięcie agentów w ścianach - jest ich mniej
+        #usunięcie agentów w ścianach - jest ich mniej niż zadajemy suwakiem
         if self.model.obstacles_map[x, y] == 1:
                 self.speed = 0
                 self.model.grid.remove_agent(self)
@@ -315,7 +301,9 @@ class Pedestrian(mesa.Agent):
                     neighbor_coords.append(coord)
 
         best_patch = None
+        second_best_patch = None
         best_utility = -float('inf')
+        second_best_utility = -float('inf')
         possible_collisions = [0,0]
 
         if self.left:
@@ -341,10 +329,19 @@ class Pedestrian(mesa.Agent):
                 if patch_data:
                     total_u = patch_data.get("Ud_lt" if self.left else "Ud_rt", 0) + patch_data.get("Uec", 0)
                     if total_u > best_utility:
+                        second_best_utility = best_utility
+                        second_best_patch = best_patch
                         best_utility = total_u
                         best_patch = coord
-
-        return best_patch
+                    elif total_u > second_best_utility:
+                        second_best_utility = total_u
+                        second_best_patch = coord
+        if second_best_patch is not None:
+            if np.random.uniform(0,1) < 0.4: #wartość z artykułu wang_2023
+                return second_best_patch 
+            else:
+                return best_patch #w wang_2023 jest jeszcze 0.1 szansy na inne komórki, ale na razie nie dodaję
+        
     
 class Obstacle(mesa.Agent):
     def __init__(self, model, x, y):
