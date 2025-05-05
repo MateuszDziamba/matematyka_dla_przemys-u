@@ -37,7 +37,7 @@ class ObstacleMap:
                             self.obstacles_map[x + i, y + j] = 1
             return self.obstacles_map
         
-#---------mapa_wymagająca_cofania------------------
+        #---------mapa_wymagająca_cofania------------------
         #for i in range(1,self.grid.height-1):
         #    self.obstacles_map[1, i] = 1
         #    Obstacle(self, 1, i)
@@ -48,3 +48,28 @@ class ObstacleMap:
         #    Obstacle(self, i, self.grid.height//2 - (self.door_width//2) - 1)
         #    Obstacle(self, i, self.grid.height//2 + (self.door_width//2))
         #--------------------------------------------------
+
+class Spawn:
+    def __init__(self,height: int, width: int):
+        self.height = height
+        self.width = width
+    def get_spawn_positions(self, obstacles_map: list, spawn_position: str) -> list:
+        self.spawn_positions = np.zeros((self.width, self.height))
+        if spawn_position == 'all_map':
+            pass
+        elif spawn_position == 'left_half':
+            for i in range(self.width//2, self.width):
+                for j in range(self.height):
+                    self.spawn_positions[i][j] = 1
+        elif spawn_position == 'left_quarter':
+            for i in range(self.width//4, self.width):
+                for j in range(self.height):
+                    self.spawn_positions[i][j] = 1
+        
+        for i in range(self.width):
+            for j in range(self.height):
+                self.spawn_positions[i][j] = self.spawn_positions[i][j] or obstacles_map[i][j]
+        
+        print(self.spawn_positions)
+        return self.spawn_positions
+        

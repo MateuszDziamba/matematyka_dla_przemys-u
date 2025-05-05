@@ -20,6 +20,7 @@ z wizualizacją, dodajemy wykresy na żywo, suwaki itp.
 import mesa
 from agents import Pedestrian
 from map_config import ObstacleMap
+from map_config import Spawn
 import random
 import math
 import heapq
@@ -28,7 +29,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 class Evacuation(mesa.Model):
-    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=None, model_type = "BNE_mixed_SR", p_BNE = 100, map_type = "empty", right_door = True):
+    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=None, model_type = "BNE_mixed_SR", p_BNE = 100, map_type = "empty", spawn_position = "all",right_door = True):
         super().__init__(seed=seed)
         self.patch_data = {}
         self.number_persons = n
@@ -74,7 +75,7 @@ class Evacuation(mesa.Model):
         #ustawienie agentów - losujemy współrzędne z wyłączeniem ścian dla każdego agenta
         counter = 0
         positions = np.zeros((n,2))
-        forbiden_positions = self.obstacles_map[:,:]
+        forbiden_positions = Spawn(height, width).get_spawn_positions(self.obstacles_map, spawn_position)
         while counter < n:
             pos = (self.rng.integers(0, self.grid.width), self.rng.integers(0, self.grid.height))
             if forbiden_positions[pos[0], pos[1]] == 0:

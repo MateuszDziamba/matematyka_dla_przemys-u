@@ -298,6 +298,12 @@ page = SolaraViz(
             "label": "Select map",
             "values": ["empty", "two_blocks", "snake", "random_squares"],
         },
+        "spawn_position":{
+            "type": "Select",
+            "value": "all_map",
+            "label": "Select area of the map where agents can spawn",
+            "values": ["all_map", "left_half", "left_quarter"],
+        },
         "right_door":{
             "type": "Checkbox",
             "value": True,
