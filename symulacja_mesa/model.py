@@ -19,6 +19,7 @@ z wizualizacją, dodajemy wykresy na żywo, suwaki itp.
 """
 import mesa
 from agents import Pedestrian
+from map_config import ObstacleMap
 import random
 import math
 import heapq
@@ -27,7 +28,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 class Evacuation(mesa.Model):
-    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=None, model_type = "BNE_mixed_SR", p_BNE = 100, right_door = True):
+    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=None, model_type = "BNE_mixed_SR", p_BNE = 100, map_type = "empty", right_door = True):
         super().__init__(seed=seed)
         self.patch_data = {}
         self.number_persons = n
@@ -53,25 +54,7 @@ class Evacuation(mesa.Model):
             'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2))]]}
 
         #przeszkody
-        self.obstacles_map = np.zeros((self.grid.width, self.grid.height))
-        
-        #---------mapa_wymagająca_cofania------------------
-        #for i in range(1,self.grid.height-1):
-        #    self.obstacles_map[1, i] = 1
-        #    Obstacle(self, 1, i)
-            
-        #for i in range(self.grid.width//2, self.grid.width):
-        #    self.obstacles_map[i,self.grid.height//2 - (self.door_width//2) - 1] = 1
-        #    self.obstacles_map[i,self.grid.height//2 + (self.door_width//2)] = 1
-        #    Obstacle(self, i, self.grid.height//2 - (self.door_width//2) - 1)
-        #    Obstacle(self, i, self.grid.height//2 + (self.door_width//2))
-        #--------------------------------------------------
-        
-        #---------mapa_z_artykułu---------------------
-        for i in range(self.grid.width//2, self.grid.width-2):
-            for j in range(self.grid.height//2 - 3):
-                self.obstacles_map[i,self.grid.height - 3 - j] = 1
-                self.obstacles_map[i, j + 2] = 1
+        self.obstacles_map = ObstacleMap(height, width, door_width, self.exits).get_map(map_type)
         
         #poruszanie agentów
         self.move_speed = 1
@@ -115,7 +98,6 @@ class Evacuation(mesa.Model):
             
         self.running = True
         self.datacollector.collect(self)
-        self.calculate_distance_utility()
         self.calculate_expected_comfort()
         
     
@@ -141,7 +123,6 @@ class Evacuation(mesa.Model):
         #funkcja shuffle_do miesza listę agentów i wykonuje podaną funkcję
         self.agents.shuffle_do("decide")
         self.calculate_expected_comfort()
-        self.calculate_distance_utility()
 
 
     # def clean(self):
@@ -161,7 +142,7 @@ class Evacuation(mesa.Model):
             (-1, -1, math.sqrt(2)), (1, -1, math.sqrt(2)),  # ukośne
             (-1,  1, math.sqrt(2)), (1,  1, math.sqrt(2))
         ]
-        test_map = np.zeros((width, height))
+        #test_map = np.zeros((width, height))
 
         def dijkstra(start_positions):
             """Zwraca mapę odległości z Dijkstrą z ruchem ukośnym."""
@@ -215,7 +196,7 @@ class Evacuation(mesa.Model):
                         "Ud_lt": Ud_lt,
                         "Ud_rt": Ud_rt
                     }
-                    test_map[x][y] = -1*self.weight_Ud
+                    #test_map[x][y] = -1*self.weight_Ud
                 else:
                     if not self.right_door_only:
                         D_lt = dist_to_left[x, y]
@@ -229,7 +210,7 @@ class Evacuation(mesa.Model):
                             "Ud_lt": Ud_lt,
                             "Ud_rt": Ud_rt
                         }
-                        test_map[x][y] = Ud_rt
+                        #test_map[x][y] = Ud_rt
                     else:
                         D_rt = dist_to_right[x, y]
 
@@ -239,12 +220,12 @@ class Evacuation(mesa.Model):
                             **self.patch_data.get((x, y), {}),
                             "Ud_rt": Ud_rt
                         }
-                        test_map[x][y] = Ud_rt
+                        #test_map[x][y] = Ud_rt
         
-        plt.clf()
-        plt.figure(figsize=(20, 20))
-        sns.heatmap(data=test_map, annot=True)
-        plt.savefig('uzytecznosc.png')
+        #plt.clf()
+        #plt.figure(figsize=(20, 20))
+        #sns.heatmap(data=test_map, annot=True)
+        #plt.savefig('uzytecznosc.png')
     
     def calculate_expected_comfort(self):
         Pm = self.probability_competing

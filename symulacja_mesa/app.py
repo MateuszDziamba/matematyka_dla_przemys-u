@@ -292,6 +292,12 @@ page = SolaraViz(
             "values": ["BNE_mixed_SR", "BNE_mixed_RF", "SR", "RF"],
 
         },
+        "map_type":{
+            "type": "Select",
+            "value": "empty",
+            "label": "Select map",
+            "values": ["empty", "two_blocks", "snake", "random_squares"],
+        },
         "right_door":{
             "type": "Checkbox",
             "value": True,
