@@ -291,6 +291,12 @@ page = SolaraViz(
             "label": "Model type",
             "values": ["BNE_mixed_SR", "BNE_mixed_RF", "SR", "RF"],
 
+        },
+        "right_door":{
+            "type": "Checkbox",
+            "value": True,
+            "label": "Right door only",
+            "description": "Add right door",
         }
     },
     components=

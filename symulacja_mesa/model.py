@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 class Evacuation(mesa.Model):
-    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=None, model_type = "BNE_mixed_SR", p_BNE = 100):
+    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=None, model_type = "BNE_mixed_SR", p_BNE = 100, right_door = True):
         super().__init__(seed=seed)
         self.patch_data = {}
         self.number_persons = n
@@ -36,7 +36,7 @@ class Evacuation(mesa.Model):
         self.grid = mesa.space.MultiGrid(width, height, False)
         
         self.moving_pattern = model_type
-        self.right_door_only = True #można dodać do tego przycisk żeby zmieniać
+        self.right_door_only = right_door
     
         #exits
         self.door_width = door_width
