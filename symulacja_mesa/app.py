@@ -95,8 +95,6 @@ def agent_portrayal(agent):
         color = "#fa6ed7"
     else:
         color = "#1565c0"
-    if agent.Obstacle_type:
-        color = "#000000"
     
     return {
         "x": agent.pos[0],
@@ -127,6 +125,13 @@ def post_process(model):
             for y in range(height):
                 if y not in y_set:
                     ax.plot([wall_x, wall_x], [y - 0.5, y + 0.5], color='black', linewidth=6)
+                    
+        #przeszkody
+        for x in range(width):
+            for y in range(height):
+                if model.obstacles_map[x, y] == 1:
+                    ax.plot(x, y, 's', color='black', markersize=300/np.maximum(height, width))
+        
     return inner
 def ScatterPlot(model):
     if not model.agents:

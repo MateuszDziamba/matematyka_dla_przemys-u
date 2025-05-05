@@ -19,7 +19,6 @@ class Pedestrian(mesa.Agent):
         self.pos_y = None
         self.color = "blue"
         self.float_position = None
-        self.Obstacle_type = False
         self.door_decision = False
         #self.movement_buffer = np.array([0.0, 0.0])
         self.follow_patience = random.randint(5, 15)  # how many steps we tolerate following
@@ -341,24 +340,3 @@ class Pedestrian(mesa.Agent):
                 return second_best_patch 
             else:
                 return best_patch #w wang_2023 jest jeszcze 0.1 szansy na inne komórki, ale na razie nie dodaję
-        
-    
-class Obstacle(mesa.Agent):
-    def __init__(self, model, x, y):
-        super().__init__(model)
-        self.color = "black"
-        self.pos_x = x
-        self.pos_y = y
-        self.model.grid.place_agent(self, (x, y))
-        self.exited = True
-        self.BNE_type = False
-        self.Obstacle_type = True
-        self.leader = False
-        self.follow = False 
-        self.left = False
-        self.speed = 0
-        self.float_position = None
-
-    def decide(self):
-        pass    
-        

@@ -19,7 +19,6 @@ z wizualizacją, dodajemy wykresy na żywo, suwaki itp.
 """
 import mesa
 from agents import Pedestrian
-from agents import Obstacle
 import random
 import math
 import heapq
@@ -73,9 +72,6 @@ class Evacuation(mesa.Model):
             for j in range(self.grid.height//2 - 3):
                 self.obstacles_map[i,self.grid.height - 3 - j] = 1
                 self.obstacles_map[i, j + 2] = 1
-                Obstacle(self, i, self.grid.height - 3 - j)
-                Obstacle(self, i, j + 2)
-        
         
         #poruszanie agentów
         self.move_speed = 1
@@ -92,15 +88,23 @@ class Evacuation(mesa.Model):
 
         #tworzenie agentów
         agents = Pedestrian.create_agents(model=self, n=n)
-        #ustawienie agentów - losujemy współrzędne dla każdego
-        Xs = self.rng.integers(0, self.grid.width, size = (n,))
-        Ys = self.rng.integers(0, self.grid.height, size = (n,))
+        #ustawienie agentów - losujemy współrzędne z wyłączeniem ścian dla każdego agenta
+        counter = 0
+        positions = np.zeros((n,2))
+        forbiden_positions = self.obstacles_map[:,:]
+        while counter < n:
+            pos = (self.rng.integers(0, self.grid.width), self.rng.integers(0, self.grid.height))
+            if forbiden_positions[pos[0], pos[1]] == 0:
+                positions[counter] = pos
+                counter += 1
+            else:
+                continue
         
         self.calculate_distance_utility()
-        for a, i, j in zip(agents, Xs, Ys):
-            a.pos = (i,j)
+        for a, i, j in zip(agents, positions[:,0], positions[:,1]):
+            a.pos = (int(i),int(j))
             a.prepare_agent()
-            self.grid.place_agent(a, (i,j))
+            self.grid.place_agent(a, (int(i), int(j)))
 
 
         #ustawienie typu agenta jeśli jest model mieszany
@@ -249,9 +253,6 @@ class Evacuation(mesa.Model):
             if self.obstacles_map[x, y] == 1:
                 continue
             neighbors = self.grid.get_neighbors((x, y), moore=True, include_center=False)
-            for neighbor in neighbors:
-                if isinstance(neighbor, Obstacle):
-                    neighbors.remove(neighbor)
             num_here = len(self.grid.get_cell_list_contents([(x, y)]))
             num_near = len(neighbors)
 
@@ -263,8 +264,6 @@ class Evacuation(mesa.Model):
                 if not self.grid.out_of_bounds(neighbor_pos):
                     patch_agents = self.grid.get_cell_list_contents([neighbor_pos])
                     for agent in patch_agents:
-                        if isinstance(agent, Obstacle):
-                            continue
                         if dx == 1 and not agent.left:
                             num_right_remove += 1
                         elif dx == -1 and agent.left:
