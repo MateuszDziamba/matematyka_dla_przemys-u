@@ -70,6 +70,5 @@ class Spawn:
             for j in range(self.height):
                 self.spawn_positions[i][j] = self.spawn_positions[i][j] or obstacles_map[i][j]
         
-        print(self.spawn_positions)
         return self.spawn_positions
         

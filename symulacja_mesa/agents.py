@@ -6,7 +6,7 @@ import random
 class Pedestrian(mesa.Agent):
     def __init__(self, model):
         super().__init__(model)
-        self.left = False
+        self.left = False #mimo, że poniżej jest napisane, że kierunek nie został jescze wybrany (co efektywnie jest prawdą), to jednak musi być to tak ustawione, by nie było błędu w którejś z funkcji, możliwe że da się to ogarnąć 
         self.speed = model.move_speed
         self.follow = True
         self.BNE_type = None
@@ -19,7 +19,7 @@ class Pedestrian(mesa.Agent):
         self.pos_y = None
         self.color = "blue"
         self.float_position = None
-        self.door_decision = False
+        self.direction_decision = False # czy podjęto decyzję o wyborze kierunku, ma zastosowanie w funkcji prepare_agent
         #self.movement_buffer = np.array([0.0, 0.0])
         self.follow_patience = random.randint(5, 15)  # how many steps we tolerate following
         self.follow_timer = 0  # how long following the current leader
@@ -61,9 +61,15 @@ class Pedestrian(mesa.Agent):
         cell = np.array(cell)
         dx = int(np.sign(cell[0]-self.float_position[0]))
         dy = int(np.sign(cell[1]-self.float_position[1]))
-
+        int_x, int_y = self.pos_x, self.pos_y
         #przesunąć się do celu
-        new_float_pos = self.float_position + np.array([dx*self.speed, dy*self.speed], dtype=float)
+        #ruch po przekątnej więc żeby maksymalna prędkość była zachowana to trzeba podzielić przez pierwiastek z 2
+        if int_x != cell[0] and int_y != cell[1]:
+            new_float_pos = self.float_position + np.array([dx*self.speed/np.sqrt(2), dy*self.speed/np.sqrt(2)], dtype=float)
+        else:
+            new_float_pos = self.float_position + np.array([dx*self.speed, dy*self.speed], dtype=float)
+        
+        
         if sum(abs(self.float_position - cell) > self.speed) == 0:
             if not self.model.grid.out_of_bounds(cell):
                 self.model.grid.move_agent(self, cell)
@@ -122,7 +128,8 @@ class Pedestrian(mesa.Agent):
         self.pos_y = y
         self.float_position = np.array(self.pos, dtype=float)
         
-        if (not self.door_decision) and (not self.model.right_door_only):
+        ##jeśli nie wybrano kierunku to wybieramy go na podstawie odległości do drzwi
+        if (not self.direction_decision) and (not self.model.right_door_only):
             coords = (self.pos_x, self.pos_y)
             patch_data = self.model.patch_data.get(coords)
             left_door_distance = patch_data.get("Ud_lt", 0)
@@ -132,8 +139,8 @@ class Pedestrian(mesa.Agent):
             else:
                 self.left = False
                 
-            self.door = self.get_door()
-            self.door_decision = True
+            self.door = self.get_door() #aktualizujemy drzwi, bo zmieniają się w zależności od kierunku
+            self.direction_decision = True
 
     def decide(self):
         x, y = self.pos
@@ -142,14 +149,7 @@ class Pedestrian(mesa.Agent):
             self.speed = 0
             self.model.grid.remove_agent(self)
             self.remove()
-            return 
-    
-        #usunięcie agentów w ścianach - jest ich mniej niż zadajemy suwakiem
-        if self.model.obstacles_map[x, y] == 1:
-                self.speed = 0
-                self.model.grid.remove_agent(self)
-                self.remove()
-                return
+            return
                 
         if self.model.moving_pattern == "SR":
             self.shortest_route()
@@ -167,6 +167,10 @@ class Pedestrian(mesa.Agent):
                 self.random_follow()
 
     def shortest_route(self):
+        '''
+        Poruszamy się wybiarając najbliższą komórkę, która nie jest przeszkodą i ma największą wartość
+        Ud_lt lub Ud_rt (w zależności od kierunku)
+        '''
         self.set_speed()
         #door_cell = self.find_closest_door_cell()
         #self.move_to_door(door_cell)
@@ -237,7 +241,10 @@ class Pedestrian(mesa.Agent):
             dy = np.sign(leader_y - y)
             print(self.model.grid.out_of_bounds((x+dx, y+dy)))
             if not self.model.grid.out_of_bounds((x+dx, y+dy)):
-                self.move_to_cell((x + dx, y + dy))
+                if self.model.obstacles_map[x+dx, y+dy] == 0:
+                    self.move_to_cell((x + dx, y + dy))
+                else:
+                    self.stop_following()
 
             else:
                 print("UWAGA")
@@ -282,10 +289,10 @@ class Pedestrian(mesa.Agent):
         p_avoi[0] = 1 - (1 - p2)**number_of_agents
         p_avoi[1] = 1 - (1 - p4)**number_of_agents
         return p_avoi
-
         
     def find_patch_BNE(self):
         x, y = self.pos
+        position_data = self.model.patch_data.get((x, y))
         neighbor_coords = []
 
         if self.left:
@@ -312,7 +319,14 @@ class Pedestrian(mesa.Agent):
             #miejsca z których mogą iść agenci tak by było zderzenie
             possible_collisions = [(x+1, y +1), (x+1, y - 1)]
         p_avoi = self.p_avoid()
-
+        
+        #dodatkowa pętla potrzebna by znormalizować punkty za ruch
+        points_diferences = []
+        for coord in neighbor_coords:
+            patch_data = self.model.patch_data.get(coord)
+            if patch_data:
+                points_diferences.append(patch_data.get("Ud_lt" if self.left else "Ud_rt", 0) - position_data.get("Ud_lt" if self.left else "Ud_rt", 0))
+                
         for coord in neighbor_coords:
             if self.model.grid.out_of_bounds(coord):
                 continue
@@ -326,7 +340,9 @@ class Pedestrian(mesa.Agent):
             else:
                 patch_data = self.model.patch_data.get(coord)
                 if patch_data:
-                    total_u = patch_data.get("Ud_lt" if self.left else "Ud_rt", 0) + patch_data.get("Uec", 0)
+                    #punkty za ruch przyznawane są na podstawie różnicy wartości Ud_lt lub Ud_rt na polu docelowym i aktualnym podzielonym przez maksymalną różnicę tych wartości wybieraną spośród wszystkich możliwych ruchów
+                    total_u = (patch_data.get("Ud_lt" if self.left else "Ud_rt", 0) - position_data.get("Ud_lt" if self.left else "Ud_rt", 0))/np.max(points_diferences) + patch_data.get("Uec", 0)
+                        
                     if total_u > best_utility:
                         second_best_utility = best_utility
                         second_best_patch = best_patch
@@ -335,8 +351,26 @@ class Pedestrian(mesa.Agent):
                     elif total_u > second_best_utility:
                         second_best_utility = total_u
                         second_best_patch = coord
+        
+        #losowe wybranie drugiej najlepszej lub dowolnej komórki   
+        rest_of_patches = neighbor_coords.copy()
+        rest_of_patches.remove(best_patch)
         if second_best_patch is not None:
-            if np.random.uniform(0,1) < 0.0: #wartość z artykułu wang_2023 - 0.4
-                return second_best_patch 
+            rest_of_patches.remove(second_best_patch)
+                     
+        if second_best_patch is not None and len(rest_of_patches) > 0:
+            random_number = np.random.uniform(0,1)
+            if random_number < 0.5: #wartość z artykułu wang_2023 - 0.5
+                return best_patch 
+            elif 0.5 <= random_number < 0.9: #wartość z artykułu wang_2023 - 0.4
+                return second_best_patch #w wang_2023 jest jeszcze 0.1 szansy na inne komórki, ale na razie nie dodaję
             else:
-                return best_patch #w wang_2023 jest jeszcze 0.1 szansy na inne komórki, ale na razie nie dodaję
+                return random.choice(rest_of_patches) #wartość z artykułu wang_2023 - 0.1
+        elif second_best_patch is not None and len(rest_of_patches) == 0:
+            random_number = np.random.uniform(0,1)
+            if random_number < 0.6:
+                return best_patch
+            else:
+                return second_best_patch
+        else:
+            return best_patch

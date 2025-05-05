@@ -43,10 +43,13 @@ class Evacuation(mesa.Model):
         #exits
         self.door_width = door_width
         self.exit_width = None
+        
+        #tylko prawe drzwi
         if self.right_door_only:
             self.exits = {''
             'left': [0,[]],
             'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2))]]}
+        #oba wyjścia
         else:
             self.exits = {''
             #x  #ys - wysokosc drzwi - na razie ręcznie, można dodać suwak, przy parzystych wychodzi +1 szerokość (ze środkiem)
@@ -55,14 +58,14 @@ class Evacuation(mesa.Model):
             'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2))]]}
 
         #przeszkody
-        self.obstacles_map = ObstacleMap(height, width, door_width, self.exits).get_map(map_type)
+        self.obstacles_map = ObstacleMap(height, width, door_width, self.exits).get_map(map_type) #przeszkody zapisane w macierzy 0-1, 0 - brak przeszkody, 1 - przeszkoda
         
         #poruszanie agentów
         self.move_speed = 1
         self.step_length = None
         self.probability_competing = 1/6
         self.percentage_of_BNE = p_BNE/100
-        self.weight_Ud = 1.0
+        self.weight_Ud = 1.0 #domyślnie 1.0
 
         self.datacollector = mesa.DataCollector(
             model_reporters={"evacuating": self.compute_agents},
@@ -84,7 +87,7 @@ class Evacuation(mesa.Model):
             else:
                 continue
         
-        self.calculate_distance_utility()
+        self.calculate_distance_utility() #obliczamy użyteczność odległości przed dodaniem agentów aby móc przypisać do nich bliższe wyjście
         for a, i, j in zip(agents, positions[:,0], positions[:,1]):
             a.pos = (int(i),int(j))
             a.prepare_agent()
@@ -101,7 +104,7 @@ class Evacuation(mesa.Model):
         self.datacollector.collect(self)
         self.calculate_expected_comfort()
         
-    
+    #metoda nieużywana, ale może się przydać w przyszłości np. do ręcznego dodawania przeszkód na mapie
     def add_obstacle(self, x, y):
         if 0 <= x < self.grid.width and 0 <= y < self.grid.height:
             #sprawdzamy czy nie ma już przeszkody w danym polu
@@ -132,6 +135,12 @@ class Evacuation(mesa.Model):
     #             self.grid.remove_agent(a)
                 
     def calculate_distance_utility(self):
+        '''
+        Traktując naszą mapę jak graf (czyli formalnie w jedyny słuszny sposób),
+        oblicza dla każdego wierzchołka odległość do najbliższego wyjścia.
+        Na tej podstawie każdej komórce przypisywana jest użyteczność, im dalej od wyjścia tym mniejsza,
+        dla komórek będących wyjściami użyteczność wynosi 1. 
+        '''
     
         width, height = self.grid.width, self.grid.height
         diagonal = math.hypot(width, height)
@@ -143,7 +152,7 @@ class Evacuation(mesa.Model):
             (-1, -1, math.sqrt(2)), (1, -1, math.sqrt(2)),  # ukośne
             (-1,  1, math.sqrt(2)), (1,  1, math.sqrt(2))
         ]
-        #test_map = np.zeros((width, height))
+        #test_map = np.zeros((width, height)) #testowa mapa do wizualizacji użyteczności
 
         def dijkstra(start_positions):
             """Zwraca mapę odległości z Dijkstrą z ruchem ukośnym."""
@@ -187,7 +196,7 @@ class Evacuation(mesa.Model):
         # Przelicz użyteczność
         for x in range(width):
             for y in range(height):
-                #zablokowanie pól z przeszkodami 
+                #przypisanie wartości -100 do komórki z przeszkodą, teoretycznie symulacja powinna działać bez tego, ale jest to dodatkowe zabezpieczenie przed ruchem na pole z przeszkodą
                 if self.obstacles_map[x, y] == 1:
                     Ud_lt = -100*self.weight_Ud
                     Ud_rt = -100*self.weight_Ud
@@ -197,7 +206,7 @@ class Evacuation(mesa.Model):
                         "Ud_lt": Ud_lt,
                         "Ud_rt": Ud_rt
                     }
-                    #test_map[x][y] = -1*self.weight_Ud
+                    #test_map[x][y] = -1*self.weight_Ud 
                 else:
                     if not self.right_door_only:
                         D_lt = dist_to_left[x, y]
@@ -230,7 +239,7 @@ class Evacuation(mesa.Model):
     
     def calculate_expected_comfort(self):
         Pm = self.probability_competing
-
+        #test_Uec = np.zeros((self.grid.width, self.grid.height)) #testowa mapa do wizualizacji oczekiwanej użyteczności związanej z komfortem
         for _, (x, y) in self.grid.coord_iter():
             if self.obstacles_map[x, y] == 1:
                 continue
@@ -265,3 +274,9 @@ class Evacuation(mesa.Model):
                 **self.patch_data.get((x, y), {}),
                 "Uec": Uec
             }
+            #test_Uec[x][y] = Uec
+        #plt.clf()
+        #plt.figure(figsize=(20, 20))
+        #sns.heatmap(data=test_Uec, annot=True)
+        #plt.savefig('Uec.png' + str(self.plot_counter) + '.png')
+        
