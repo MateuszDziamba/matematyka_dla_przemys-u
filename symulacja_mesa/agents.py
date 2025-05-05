@@ -167,7 +167,7 @@ class Pedestrian(mesa.Agent):
                 self.random_follow()
 
     def shortest_route(self):
-        #self.set_speed()
+        self.set_speed()
         #door_cell = self.find_closest_door_cell()
         #self.move_to_door(door_cell)
         
@@ -336,7 +336,7 @@ class Pedestrian(mesa.Agent):
                         second_best_utility = total_u
                         second_best_patch = coord
         if second_best_patch is not None:
-            if np.random.uniform(0,1) < 0.4: #wartość z artykułu wang_2023
+            if np.random.uniform(0,1) < 0.0: #wartość z artykułu wang_2023 - 0.4
                 return second_best_patch 
             else:
                 return best_patch #w wang_2023 jest jeszcze 0.1 szansy na inne komórki, ale na razie nie dodaję
