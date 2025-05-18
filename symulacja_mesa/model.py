@@ -154,8 +154,9 @@ class Evacuation(mesa.Model):
             (-1, -1, math.sqrt(2)), (1, -1, math.sqrt(2)),  # ukośne
             (-1,  1, math.sqrt(2)), (1,  1, math.sqrt(2))
         ]
-        #test_map = np.zeros((width, height)) #testowa mapa do wizualizacji użyteczności
-
+        test_map_left = np.zeros((width, height)) #testowa mapa do wizualizacji użyteczności
+        test_map_right = np.zeros((width, height))
+         
         def dijkstra(start_positions):
             """Zwraca mapę odległości z Dijkstrą z ruchem ukośnym."""
             distance = np.full((width, height), np.inf)
@@ -213,8 +214,8 @@ class Evacuation(mesa.Model):
                     if not self.right_door_only:
                         D_lt = dist_to_left[x, y]
                         D_rt = dist_to_right[x, y]
-
-                        Ud_lt = (1 - (D_lt / diagonal)) * self.weight_Ud if not np.isinf(D_lt) else 0
+                        print("D_lt", D_lt)
+                        Ud_lt = (1 - (D_lt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
                         Ud_rt = (1 - (D_rt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
 
                         self.patch_data[(x, y)] = {
@@ -222,7 +223,8 @@ class Evacuation(mesa.Model):
                             "Ud_lt": Ud_lt,
                             "Ud_rt": Ud_rt
                         }
-                        #test_map[x][y] = Ud_rt
+                        test_map_left[x][y] = Ud_lt
+                        test_map_right[x][y] = Ud_rt
                     else:
                         D_rt = dist_to_right[x, y]
 
@@ -232,12 +234,17 @@ class Evacuation(mesa.Model):
                             **self.patch_data.get((x, y), {}),
                             "Ud_rt": Ud_rt
                         }
-                        #test_map[x][y] = Ud_rt
+                        test_map_right[x][y] = Ud_rt
         
-        #plt.clf()
-        #plt.figure(figsize=(20, 20))
-        #sns.heatmap(data=test_map, annot=True)
-        #plt.savefig('uzytecznosc.png')
+        plt.clf()
+        plt.figure(figsize=(20, 20))
+        sns.heatmap(data=test_map_left, annot=True)
+        plt.savefig('uzytecznosc_left.png')
+
+        plt.clf()
+        plt.figure(figsize=(20, 20))
+        sns.heatmap(data=test_map_right, annot=True)
+        plt.savefig('uzytecznosc_right.png')
     
     def calculate_expected_comfort(self):
         Pm = self.probability_competing

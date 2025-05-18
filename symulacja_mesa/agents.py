@@ -6,7 +6,7 @@ import random
 class Pedestrian(mesa.Agent):
     def __init__(self, model):
         super().__init__(model)
-        self.left = False #mimo, że poniżej jest napisane, że kierunek nie został jescze wybrany (co efektywnie jest prawdą), to jednak musi być to tak ustawione, by nie było błędu w którejś z funkcji, możliwe że da się to ogarnąć 
+        self.left = None #mimo, że poniżej jest napisane, że kierunek nie został jescze wybrany (co efektywnie jest prawdą), to jednak musi być to tak ustawione, by nie było błędu w którejś z funkcji, możliwe że da się to ogarnąć 
         self.speed = model.move_speed
         self.follow = True
         self.BNE_type = None
@@ -130,17 +130,20 @@ class Pedestrian(mesa.Agent):
         
         ##jeśli nie wybrano kierunku to wybieramy go na podstawie odległości do drzwi
         if (not self.direction_decision) and (not self.model.right_door_only):
+            print("Preparing agent", self.unique_id, "at", self.pos, "left:", self.left, "door: ", self.door)
             coords = (self.pos_x, self.pos_y)
             patch_data = self.model.patch_data.get(coords)
             left_door_distance = patch_data.get("Ud_lt", 0)
             right_door_distance = patch_data.get("Ud_rt", 0)
-            if left_door_distance < right_door_distance:
+            if left_door_distance > right_door_distance: # w drugą stronę nierównośc, bo to są już użyteczności!
                 self.left = True
             else:
                 self.left = False
                 
             self.door = self.get_door() #aktualizujemy drzwi, bo zmieniają się w zależności od kierunku
             self.direction_decision = True
+            print("Prepared agent", self.unique_id, "at", self.pos, "left:", self.left, "door: ", self.door)
+        return self.left
 
     def decide(self):
         x, y = self.pos
