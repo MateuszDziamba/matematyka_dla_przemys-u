@@ -237,6 +237,7 @@ def CombinedPlot(model):
             SpeedPlot(model)
 
 
+
 model = Evacuation(80, 20, 10)
 page = SolaraViz(
     model,

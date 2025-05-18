@@ -28,6 +28,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+#random.seed(10)
+
 class Evacuation(mesa.Model):
     def __init__(self, n=10, width=20, height=10, door_width = 4, seed=None, model_type = "BNE_mixed_SR", p_BNE = 100, map_type = "empty", spawn_position = "all",right_door = True):
         super().__init__(seed=seed)
