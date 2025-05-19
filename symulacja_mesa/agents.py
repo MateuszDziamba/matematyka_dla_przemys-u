@@ -25,7 +25,10 @@ class Pedestrian(mesa.Agent):
         self.follow_timer = 0  # how long following the current leader
 
     def get_door(self):
-        return self.model.exits['left' if self.left else 'right']
+        door = self.model.exits['left' if self.left else 'right']
+        if self.model.classroom:
+            self.left = False
+        return door
        
     def test(self):
         print(f"Hi, I'm agent {str(self.unique_id)}")
@@ -328,7 +331,7 @@ class Pedestrian(mesa.Agent):
         for coord in neighbor_coords:
             patch_data = self.model.patch_data.get(coord)
             if patch_data:
-                points_diferences.append(patch_data.get("Ud_lt" if self.left else "Ud_rt", 0) - position_data.get("Ud_lt" if self.left else "Ud_rt", 0))
+                points_diferences.append(patch_data.get("Ud_lt" if self.left or (self.model.classroom and self.door[1][0]==16) else "Ud_rt", 0) - position_data.get("Ud_lt" if self.left or (self.model.classroom and self.door[1][0]==16) else "Ud_rt", 0))
                 
         for coord in neighbor_coords:
             if self.model.grid.out_of_bounds(coord):
@@ -344,7 +347,7 @@ class Pedestrian(mesa.Agent):
                 patch_data = self.model.patch_data.get(coord)
                 if patch_data:
                     #punkty za ruch przyznawane są na podstawie różnicy wartości Ud_lt lub Ud_rt na polu docelowym i aktualnym podzielonym przez maksymalną różnicę tych wartości wybieraną spośród wszystkich możliwych ruchów
-                    total_u = (patch_data.get("Ud_lt" if self.left else "Ud_rt", 0) - position_data.get("Ud_lt" if self.left else "Ud_rt", 0))/np.max(points_diferences) + patch_data.get("Uec", 0)
+                    total_u = (patch_data.get("Ud_lt" if self.left or (self.model.classroom and self.door[1][0]==16) else "Ud_rt", 0) - position_data.get("Ud_lt" if self.left or (self.model.classroom and self.door[1][0]==16)  else "Ud_rt", 0))/np.max(points_diferences) + patch_data.get("Uec", 0)
                         
                     if total_u > best_utility:
                         second_best_utility = best_utility
@@ -357,7 +360,7 @@ class Pedestrian(mesa.Agent):
         
         #losowe wybranie drugiej najlepszej lub dowolnej komórki   
         rest_of_patches = neighbor_coords.copy()
-        rest_of_patches.remove(best_patch)
+        if best_patch in rest_of_patches: rest_of_patches.remove(best_patch)
         if second_best_patch is not None:
             rest_of_patches.remove(second_best_patch)
                      

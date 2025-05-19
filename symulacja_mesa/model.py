@@ -27,16 +27,33 @@ import heapq
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 #random.seed(10)
 
 class Evacuation(mesa.Model):
-    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=None, model_type = "BNE_mixed_SR", p_BNE = 100, map_type = "empty", spawn_position = "all",right_door = True):
+    def __init__(self, n=10, width=20, height=10, door_width = 4, seed=10, model_type = "BNE_mixed_SR", p_BNE = 100, map_type = "empty", spawn_position = "all",right_door = True, classroom=False):
         super().__init__(seed=seed)
+        self.classroom = classroom
         self.patch_data = {}
-        self.number_persons = n
+        self.number_persons=n
         #przestrzeń MultiGrid dopuszcza kilku agentów w jednym polu
         #argument False oznacza torus=False
+        if self.classroom:
+            width=16
+            height=20
+            map_type="classroom"
+            spawn_position='classroom'
+            if right_door:
+                self.exits = {
+                'right': [width-1, [4,5]], #lower
+                }
+            else:
+                self.exits = {
+                    'right': [width-1, [4]], #lower
+                    'left': [width-1, [16]] #upper
+            }
+
         self.grid = mesa.space.MultiGrid(width, height, False)
         
         self.moving_pattern = model_type
@@ -46,22 +63,23 @@ class Evacuation(mesa.Model):
         self.door_width = door_width
         self.exit_width = None
         
-        #tylko prawe drzwi
-        if self.right_door_only:
-            self.exits = {''
-            'left': [0,[]],
-            'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2))]]}
-        #oba wyjścia
-        else:
-            self.exits = {''
-            #x  #ys - wysokosc drzwi - na razie ręcznie, można dodać suwak, przy parzystych wychodzi +1 szerokość (ze środkiem)
-            # Zmieniłam bez +1, bo przy parzystej wysokości wyjściowej nie wychodziło równo
-            'left': [0, [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2) )] ],
-            'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2))]]}
+        if not self.classroom:
+            #tylko prawe drzwi
+            if self.right_door_only:
+                self.exits = {''
+                'left': [0,[]],
+                'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2))]]}
+            #oba wyjścia
+            else:
+                self.exits = {
+                #x  #ys - wysokosc drzwi - na razie ręcznie, można dodać suwak, przy parzystych wychodzi +1 szerokość (ze środkiem)
+                # Zmieniłam bez +1, bo przy parzystej wysokości wyjściowej nie wychodziło równo
+                'left': [0, [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2) )] ],
+                'right': [self.grid.width-1,  [self.grid.height//2 + i for i in range(-(self.door_width//2), (self.door_width//2))]]}
 
         #przeszkody
         self.obstacles_map = ObstacleMap(height, width, door_width, self.exits).get_map(map_type) #przeszkody zapisane w macierzy 0-1, 0 - brak przeszkody, 1 - przeszkoda
-        
+
         #poruszanie agentów
         self.move_speed = 1
         self.step_length = None
@@ -81,13 +99,41 @@ class Evacuation(mesa.Model):
         counter = 0
         positions = np.zeros((n,2))
         forbiden_positions = Spawn(height, width).get_spawn_positions(self.obstacles_map, spawn_position)
-        while counter < n:
-            pos = (self.rng.integers(0, self.grid.width), self.rng.integers(0, self.grid.height))
-            if forbiden_positions[pos[0], pos[1]] == 0:
-                positions[counter] = pos
-                counter += 1
-            else:
-                continue
+        if not self.classroom:
+            while counter < n:
+                pos = (self.rng.integers(0, self.grid.width), self.rng.integers(0, self.grid.height))
+                if forbiden_positions[pos[0], pos[1]] == 0:
+                    positions[counter] = pos
+                    counter += 1
+                else:
+                    continue
+        else:
+            rows, cols = forbiden_positions.shape
+            possible_pos = [(y,  x) for y in range(rows) for x in range(cols) if forbiden_positions[y, x] == 0]
+            used_positions = set()
+            pos = (9,13) #Ślęzak
+            used_positions.add(pos)
+            positions[counter] = pos
+            counter+=1
+            pos1 = (2,18) #my
+            pos2 = (6,18)
+            used_positions.add(pos1)
+            positions[counter] = pos1
+            counter+=1
+            used_positions.add(pos2)
+            positions[counter] = pos2
+            counter+=1
+            while counter<n:
+                pos = self.rng.choice(possible_pos)
+                while counter < n:
+                    pos = random.choice(possible_pos)
+                    if pos not in used_positions:
+                        used_positions.add(pos)
+                        positions[counter] = pos
+                        counter += 1
+                    else:
+                        continue
+
         
         self.calculate_distance_utility() #obliczamy użyteczność odległości przed dodaniem agentów aby móc przypisać do nich bliższe wyjście
         for a, i, j in zip(agents, positions[:,0], positions[:,1]):
@@ -187,14 +233,24 @@ class Evacuation(mesa.Model):
             return distance
 
         # Lista pozycji drzwi
-        if not self.right_door_only:
-            left_door_positions = [(self.exits['left'][0], y) for y in self.exits['left'][1]]
-        right_door_positions = [(self.exits['right'][0], y) for y in self.exits['right'][1]]
+        if self.classroom:
+            lower_exit = [(self.exits['right'][0], y) for y in self.exits['right'][1]]
+            dist_to_lower = dijkstra(lower_exit)
+            if not self.right_door_only:
+                upper_exit = [(self.exits['left'][0], y) for y in self.exits['left'][1]]
+                dist_to_upper = dijkstra(upper_exit)
+            
+           
+        else:
+            if not self.right_door_only:
+                left_door_positions = [(self.exits['left'][0], y) for y in self.exits['left'][1]]
+            right_door_positions = [(self.exits['right'][0], y) for y in self.exits['right'][1]]
 
-        # Oblicz odległości
-        if not self.right_door_only:
-            dist_to_left = dijkstra(left_door_positions)
-        dist_to_right = dijkstra(right_door_positions)
+            # Oblicz odległości
+            if not self.right_door_only:
+                dist_to_left = dijkstra(left_door_positions)
+            dist_to_right = dijkstra(right_door_positions)
+           
 
         # Przelicz użyteczność
         for x in range(width):
@@ -209,32 +265,52 @@ class Evacuation(mesa.Model):
                         "Ud_lt": Ud_lt,
                         "Ud_rt": Ud_rt
                     }
-                    #test_map[x][y] = -1*self.weight_Ud 
+                    test_map_left[x][y] = -1*self.weight_Ud 
+                    test_map_right[x][y] = -1*self.weight_Ud 
                 else:
-                    if not self.right_door_only:
-                        D_lt = dist_to_left[x, y]
-                        D_rt = dist_to_right[x, y]
-                        print("D_lt", D_lt)
-                        Ud_lt = (1 - (D_lt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
-                        Ud_rt = (1 - (D_rt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
-
-                        self.patch_data[(x, y)] = {
-                            **self.patch_data.get((x, y), {}),
-                            "Ud_lt": Ud_lt,
-                            "Ud_rt": Ud_rt
-                        }
-                        test_map_left[x][y] = Ud_lt
-                        test_map_right[x][y] = Ud_rt
+                    if self.classroom:
+                        if not self.right_door_only:
+                            D_lt = dist_to_upper[x, y]
+                            D_rt = dist_to_lower[x, y]
+                            Ud_lt = (1 - (D_lt / diagonal)) * self.weight_Ud if not np.isinf(D_lt) else 0
+                            Ud_rt = (1 - (D_rt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
+                            self.patch_data[(x, y)] = {
+                                    **self.patch_data.get((x, y), {}),
+                                    "Ud_lt": Ud_lt,
+                                    "Ud_rt": Ud_rt
+                                }
+                        # test_map_left[x][y] = Ud_lt
+                        # test_map_right[x][y] = Ud_rt
+                        else:
+                            D_rt = dist_to_lower[x, y]
+                            Ud_rt = (1 - (D_rt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
+                            self.patch_data[(x, y)] = {
+                                    **self.patch_data.get((x, y), {}),
+                                    "Ud_rt": Ud_rt}
                     else:
-                        D_rt = dist_to_right[x, y]
+                        if not self.right_door_only:
+                            D_lt = dist_to_left[x, y]
+                            D_rt = dist_to_right[x, y]
+                            Ud_lt = (1 - (D_lt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
+                            Ud_rt = (1 - (D_rt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
 
-                        Ud_rt = (1 - (D_rt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
+                            self.patch_data[(x, y)] = {
+                                **self.patch_data.get((x, y), {}),
+                                "Ud_lt": Ud_lt,
+                                "Ud_rt": Ud_rt
+                            }
+                            # test_map_left[x][y] = Ud_lt
+                            # test_map_right[x][y] = Ud_rt
+                        else:
+                            D_rt = dist_to_right[x, y]
 
-                        self.patch_data[(x, y)] = {
-                            **self.patch_data.get((x, y), {}),
-                            "Ud_rt": Ud_rt
-                        }
-                        test_map_right[x][y] = Ud_rt
+                            Ud_rt = (1 - (D_rt / diagonal)) * self.weight_Ud if not np.isinf(D_rt) else 0
+
+                            self.patch_data[(x, y)] = {
+                                **self.patch_data.get((x, y), {}),
+                                "Ud_rt": Ud_rt
+                            }
+                        # test_map_right[x][y] = Ud_rt
         
         plt.clf()
         plt.figure(figsize=(20, 20))

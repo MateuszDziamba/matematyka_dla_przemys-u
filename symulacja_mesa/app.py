@@ -114,18 +114,39 @@ def post_process(model):
         ax.plot([-0.5, width - 0.5], [-0.5, -0.5], color='black', linewidth=6)          
         ax.plot([-0.5, width - 0.5], [height - 0.5, height - 0.5], color='black', linewidth=6)
 
+        # if model.classroom:
+        #     ys = [y[0] for _,y in model.exits.values()]
+        #     ax.plot([15.5,15.5], [ys[0] + 0.5, ys[1]-0.5], color='black', linewidth=6)
+        #     ax.plot([15.5,15.5], [-0.5, ys[0]-0.5], color='black', linewidth=6)
+        #     ax.plot([15.5,15.5], [ys[1] + 0.5, 20], color='black', linewidth=6)
+        #     return inner
         # Lewa i prawa ściana z przerwami na drzwi
-        for door in model.exits:
-            x, y_list = model.exits[door]
-            y_set = set(y_list)
-            if door == "left":
-                wall_x = x - 0.5
-            else:
-                wall_x = x + 0.5
-            for y in range(height):
-                if y not in y_set:
-                    ax.plot([wall_x, wall_x], [y - 0.5, y + 0.5], color='black', linewidth=6)
-                    
+        if not model.classroom:
+            for door in model.exits:
+                x, y_list = model.exits[door]
+                y_set = set(y_list)
+                if door == "left":
+                    wall_x = x - 0.5
+                else:
+                    wall_x = x + 0.5
+                for y in range(height):
+                    if y not in y_set:
+                        ax.plot([wall_x, wall_x], [y - 0.5, y + 0.5], color='black', linewidth=6)
+        else:
+            x_to_ys = {}
+            for door in model.exits:
+                x, y_list = model.exits[door]
+                if x not in x_to_ys:
+                    x_to_ys[x] = []
+                x_to_ys[x].extend(y_list)  # group y-values by x
+
+            for x, y_list in x_to_ys.items():
+                wall_x = x + 0.5  # right wall (outside the cell)
+                y_set = set(y_list)
+                for y in range(height):
+                    if y not in y_set:
+                        ax.plot([wall_x, wall_x], [y - 0.5, y + 0.5], color='black', linewidth=6)      
+
         #przeszkody
         for x in range(width):
             for y in range(height):
@@ -255,27 +276,27 @@ page = SolaraViz(
         },
         "width": {
         "type": "SliderInt",
-        "value": 20,
+        "value": 16 if model.classroom else 20,
         "label": "Width:",
         "min": 10,
         "max": 50,
-        "step": 10,
+        "step": 2,
         },
         "height": {
         "type": "SliderInt",
-        "value": 10,
+        "value": 20 if model.classroom else 10,
         "label": "Height:",
         "min": 10,
         "max": 30,
-        "step": 10,
+        "step": 2,
         },
         "door_width":{
         "type": "SliderInt",
-        "value": 4,
+        "value": 1 if model.classroom else 4,
         "label": "Door width:",
-        "min": 2,
+        "min": 1,
         "max": 10,
-        "step": 2,
+        "step": 1,
         },
         "p_BNE":{
         "type": "SliderInt",
@@ -295,13 +316,13 @@ page = SolaraViz(
         },
         "map_type":{
             "type": "Select",
-            "value": "empty",
+            "value": "classroom" if model.classroom else "empty",
             "label": "Select map",
             "values": ["empty", "two_blocks", "snake", "random_squares"],
         },
         "spawn_position":{
             "type": "Select",
-            "value": "all_map",
+            "value": "classroom" if model.classroom else "all_map",
             "label": "Select area of the map where agents can spawn",
             "values": ["all_map", "left_half", "left_quarter"],
         },
@@ -310,6 +331,12 @@ page = SolaraViz(
             "value": True,
             "label": "Right door only",
             "description": "Add right door",
+        },
+        "classroom":{
+            "type": "Checkbox",
+            "value": False,
+            "label": "Classroom mode",
+            "description": "Turn on classroom mode"
         }
     },
     components=

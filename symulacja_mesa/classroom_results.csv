@@ -1,0 +1,5 @@
+door,p_BNE,mean_time
+True,0,20.14
+False,0,50.0
+True,100,34.98
+False,100,30.72
